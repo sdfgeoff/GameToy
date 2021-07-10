@@ -1,0 +1,27 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.game {
+    color: white;
+    font-family: sans-serif;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    background: grey url("click_icon.svg") no-repeat center;
+    background-size: 100px 100px;
+}
+
+.game.loading {
+    background: black url("loading.gif") no-repeat center;
+}
+
+.game.loaded {
+    background: black;
+}
+
+.game.error {
+    background: black url("error.svg") no-repeat center;
+}

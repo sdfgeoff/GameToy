@@ -1,0 +1,12 @@
+[package]
+name = "gametoy"
+version = "0.1.0"
+authors = ["Geoffrey Irons <sdfgeoff@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+glow = "0.10.0"
+tar = "0.4"

@@ -1,0 +1,43 @@
+{
+    "nodes": {
+        'test_pass': {
+            'type': "pass",
+            'output_textures': {
+                'col': {"type":'RGB888',}
+                'position': {"type":"RGBAFloat"}
+            }
+            'resolution_scaling_mode': ENUM<Fixed, Viewport>
+            'resolution': [512, 512]
+            'fragment_shader': 'path',
+
+            'input_textures': [
+                'some_input_tex1',
+                'some_input_tex2'
+            ]
+        },
+        "test_tex": {
+            "type":"texture",
+            "path": "path/to/file.png",
+        }
+    },
+    "links": [
+        ("test_pass", "col", "", ""),
+        ("test_tex", "some_input_tex1")
+    
+    ]
+
+
+In RUST:
+
+Node Trait: {
+    input_tex: HashMap<String, Option<Rc<Texture>>>
+    output_tex: HashMap<String, Rc<Texture>>    
+}
+
+
+nodes = HashMap<String, dyn Node>
+
+for (start_node, start_tex, end_node, end_tex) in links{
+    nodes[end_node].input_node[end_tex] = Some(nodes[start_node].output_node[start_tex])
+}
+    
