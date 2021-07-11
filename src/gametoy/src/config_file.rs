@@ -1,8 +1,12 @@
+use serde::{Serialize, Deserialize};
+
+
 /// The game is configured through a config file. In the future this
 /// may be generated using some sort of tool.
 /// This file contains everything needed to construct the game except
 /// for some "big" data such as textures and shaders
-struct ConfigFile {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ConfigFile {
     /// Data about the game, author etc.
     metadata: MetaData,
 
@@ -11,7 +15,8 @@ struct ConfigFile {
 }
 
 /// Contains information about the game/author etc.
-struct MetaData {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MetaData {
     /// The name of the game. This is displayed while loading, on the window title etc.
     game_name: String,
 
@@ -33,7 +38,8 @@ struct MetaData {
 
 
 /// Configures the rendergraph - the thing that actually runs the game.
-struct GraphConfig {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GraphConfig {
     /// A node is a "process" that takes some inputs and generates some output
     /// Note that the order is important - the order in here defines
     /// the order of execution
@@ -44,7 +50,8 @@ struct GraphConfig {
 }
 
 /// Connects two nodes in the rendergraph
-struct Link {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Link {
     /// The name of the node to start on
     start_node: String,
     /// Which output of the `start_node` to connect to
@@ -58,7 +65,8 @@ struct Link {
 
 /// A node in the rendergraph. A rendergraph node takes a bunch of
 /// texture inputs and processes them to create some outputs
-enum Node{
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Node{
     /// A static texture as defined in a file
     Texture(TextureConfig),
 
@@ -68,14 +76,16 @@ enum Node{
 }
 
 /// A node containing a static texture
-struct TextureConfig {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TextureConfig {
     /// the path to read the texture from
     name: String,
     path: String
 }
 
 /// A node that runs a GLSL shader on it's inputs.
-struct RenderPassConfig {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RenderPassConfig {
     /// the name of the renderpass
     name: String,
     /// Configuration of the renderpasses outputs
@@ -96,8 +106,9 @@ struct RenderPassConfig {
     execution_mode: ExecutionMode,
 }
 
-/// An output channel from a `RenderPass`
-struct OutputBufferConfig {
+/// An output channel from a `RenderPass
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OutputBufferConfig {
     /// The name of the output channel
     name: String,
 
@@ -111,13 +122,15 @@ struct OutputBufferConfig {
 }
 
 /// An input channel for a `RenderPass`
+#[derive(Serialize, Deserialize, Debug)]
 struct InputBufferConfig {
     /// the name of the input channel
     name: String,
 }
 
 /// How the resolution of a `RenderPass` is configured
-enum ResolutionScalingMode {
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ResolutionScalingMode {
     /// The resolution is a fixed size and does not change
     Fixed(u32, u32),
 
@@ -127,7 +140,8 @@ enum ResolutionScalingMode {
 
 
 /// When should the renderpass execute
-enum ExecutionMode {
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ExecutionMode {
 
     /// Draw on every frame
     Always,
@@ -141,7 +155,9 @@ enum ExecutionMode {
     InputsChanged
 }
 
-enum OutputBufferFormat {
+/// The precision and number of channels used for a buffer
+#[derive(Serialize, Deserialize, Debug)]
+pub enum OutputBufferFormat {
     R8,
     R8_SNORM,	 	 	 	 
     R16,
