@@ -16,7 +16,7 @@ pub struct Quad {
 impl Quad {
     pub fn new(gl: &Context) -> Result<Self, QuadError> {
         let position_buffer =
-            unsafe { upload_array_f32(gl, vec![-1.0, 1.0, 1.0, 1.0, 0.0, -1.0])? };
+            unsafe { upload_array_f32(gl, vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])? };
         Ok(Self { position_buffer })
     }
 

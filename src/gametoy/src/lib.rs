@@ -74,7 +74,7 @@ impl GameToy {
 
             self.shader_program.bind(&self.gl);
 
-            self.gl.draw_arrays(glow::TRIANGLES, 0, 3);
+            self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
         }
     }
 

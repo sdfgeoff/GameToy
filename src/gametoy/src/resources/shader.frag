@@ -2,7 +2,7 @@
 // Color screen based on on-screen-position
 
 precision mediump float;
-in vec4 screen_pos;
+in vec2 screen_pos;
 out vec4 FragColor;
 
 
