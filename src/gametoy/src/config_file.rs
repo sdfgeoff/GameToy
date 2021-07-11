@@ -1,5 +1,4 @@
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 /// The game is configured through a config file. In the future this
 /// may be generated using some sort of tool.
@@ -22,20 +21,19 @@ pub struct MetaData {
 
     /// What version of the game this is. Probably use semantic versioning or a git hash
     game_version: String,
-    
+
     /// What date this version of the game was released on
     release_date: String,
-    
+
     /// Website for this game
     website: String,
 
     /// The name of the author who created this game
     author_name: String,
-    
+
     /// Any licensing information for this game.
     license: String,
 }
-
 
 /// Configures the rendergraph - the thing that actually runs the game.
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,7 +44,7 @@ pub struct GraphConfig {
     nodes: Vec<Node>,
 
     /// A link connects the nodes
-    links: Vec<Link>
+    links: Vec<Link>,
 }
 
 /// Connects two nodes in the rendergraph
@@ -66,13 +64,13 @@ pub struct Link {
 /// A node in the rendergraph. A rendergraph node takes a bunch of
 /// texture inputs and processes them to create some outputs
 #[derive(Serialize, Deserialize, Debug)]
-pub enum Node{
+pub enum Node {
     /// A static texture as defined in a file
     Texture(TextureConfig),
 
     /// A renderpass - runs a GLSL shader on it's inputs to create
     /// the outputs.
-    RenderPass(RenderPassConfig)
+    RenderPass(RenderPassConfig),
 }
 
 /// A node containing a static texture
@@ -80,7 +78,7 @@ pub enum Node{
 pub struct TextureConfig {
     /// the path to read the texture from
     name: String,
-    path: String
+    path: String,
 }
 
 /// A node that runs a GLSL shader on it's inputs.
@@ -118,7 +116,7 @@ pub struct OutputBufferConfig {
     /// Should the texture behind this output double buffer?
     /// Double buffering uses more VRAM, but allows a renderpass
     /// to sample it's own output on subsequent frames.
-    double_buffer: bool
+    double_buffer: bool,
 }
 
 /// An input channel for a `RenderPass`
@@ -138,11 +136,9 @@ pub enum ResolutionScalingMode {
     ViewportScale(f32, f32),
 }
 
-
 /// When should the renderpass execute
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ExecutionMode {
-
     /// Draw on every frame
     Always,
 
@@ -152,17 +148,18 @@ pub enum ExecutionMode {
 
     /// Run only when the inputs change. This is useful
     /// if you need to post-process generated textures etc.
-    InputsChanged
+    InputsChanged,
 }
 
 /// The precision and number of channels used for a buffer
 #[derive(Serialize, Deserialize, Debug)]
+#[allow(non_camel_case_types)]
 pub enum OutputBufferFormat {
     R8,
-    R8_SNORM,	 	 	 	 
+    R8_SNORM,
     R16,
     R16_SNORM,
-    RG8,	
+    RG8,
     RG8_SNORM,
     RG16,
     RG16_SNORM,

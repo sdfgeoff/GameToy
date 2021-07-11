@@ -1,10 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use js_sys::Function;
+use js_sys::{ArrayBuffer, Function, Uint8Array};
 use wasm_bindgen::prelude::{wasm_bindgen, Closure};
 use wasm_bindgen::JsCast;
-use web_sys::{window, Event, HtmlCanvasElement, KeyEvent, MouseEvent};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{
+    window, Event, HtmlCanvasElement, KeyEvent, MouseEvent, Request, RequestInit, RequestMode,
+    Response,
+};
 
 mod app;
 
@@ -23,23 +27,68 @@ pub struct Core {
     canvas: HtmlCanvasElement,
 }
 
+pub async fn load_tar() -> Vec<u8> {
+    let mut opts = RequestInit::new();
+    opts.method("GET");
+    opts.mode(RequestMode::Cors);
+
+    let url = "../datapack.tar";
+
+    log(&format!("[OK] Downloading datapack from {}", &url));
+
+    let request = Request::new_with_str_and_init(&url, &opts).expect("Failed to create request");
+
+    request
+        .headers()
+        .set("Accept", "application/vnd.github.v3+json")
+        .expect("Failed to set headers");
+
+    let window = web_sys::window().unwrap();
+    let resp_value = JsFuture::from(window.fetch_with_request(&request))
+        .await
+        .expect("Failed to get request");
+
+    log(&format!("[OK] Download Completed. Loading to WASM"));
+
+    // `resp_value` is a `Response` object.
+    assert!(resp_value.is_instance_of::<Response>());
+    let resp: Response = resp_value.dyn_into().unwrap();
+
+    let array_promise = resp.array_buffer().unwrap();
+    let array = wasm_bindgen_futures::JsFuture::from(array_promise)
+        .await
+        .expect("Failed to get array buffer");
+    assert!(array.is_instance_of::<ArrayBuffer>());
+    let uint8_view = Uint8Array::new_with_byte_offset(&array, 0);
+
+    uint8_view.to_vec()
+}
+
+#[wasm_bindgen]
+pub async fn load_core(canvas: HtmlCanvasElement) -> Core {
+    log(&format!("WASM Started for canvas {}", canvas.id()));
+
+    let tar_data = load_tar().await;
+
+    log("[OK] DataPack in RAM, Starting Core");
+    let mut core = Core::new(canvas, tar_data);
+    core.start();
+
+    core
+}
+
 #[wasm_bindgen]
 impl Core {
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas: HtmlCanvasElement) -> Self {
-        log(&format!("WASM Started for canvas {}", canvas.id()));
+    pub fn new(canvas: HtmlCanvasElement, tar_data: Vec<u8>) -> Self {
         console_error_panic_hook::set_once();
         canvas.set_class_name("game loaded");
 
-        let app = Rc::new(RefCell::new(app::App::new(canvas.clone())));
-        
-        Self {
-            app,
-            canvas
-        }
+        let app = Rc::new(RefCell::new(app::App::new(canvas.clone(), tar_data)));
+
+        Self { app, canvas }
     }
 
-    #[wasm_bindgen]
     pub fn start(&mut self) {
         let window = window().unwrap();
         {

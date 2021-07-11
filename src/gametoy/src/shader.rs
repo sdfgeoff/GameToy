@@ -1,12 +1,9 @@
-use glow::{Context, Shader, Program, HasContext, VERTEX_SHADER, FRAGMENT_SHADER};
-
-
+use glow::{Context, HasContext, Program, Shader, FRAGMENT_SHADER, VERTEX_SHADER};
 
 #[derive(Debug)]
 pub enum ShaderError {
     ShaderAllocError(String),
     ShaderProgramAllocError(String),
-    MissingUniform(String),
     ShaderCompileError {
         shader_type: u32,
         compiler_output: String,
@@ -14,19 +11,14 @@ pub enum ShaderError {
     ShaderLinkError(String),
 }
 
-
 pub struct SimpleShader {
-	pub program: Program,
+    pub program: Program,
     //pub attrib_vertex_positions: u32,
 }
 
 impl SimpleShader {
-	pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
-        let program = unsafe {init_shader_program(
-            gl,
-            vert,
-            frag,
-        )?};
+    pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
+        let program = unsafe { init_shader_program(gl, vert, frag)? };
 
         //let attrib_vertex_positions = gl.get_attrib_location(program, "aVertexPosition");
 
@@ -43,22 +35,18 @@ impl SimpleShader {
     }
 }
 
-
-
-
 unsafe fn load_shader(
     gl: &Context,
     shader_type: u32,
     shader_text: &str,
 ) -> Result<Shader, ShaderError> {
-
-    let shader = gl.create_shader(shader_type).map_err(ShaderError::ShaderAllocError)?;
-
+    let shader = gl
+        .create_shader(shader_type)
+        .map_err(ShaderError::ShaderAllocError)?;
 
     gl.shader_source(shader, shader_text);
     gl.compile_shader(shader);
-    if !gl.get_shader_compile_status(shader)
-    {
+    if !gl.get_shader_compile_status(shader) {
         let compiler_output = gl.get_shader_info_log(shader);
         gl.delete_shader(shader);
         return Err(ShaderError::ShaderCompileError {
@@ -68,7 +56,6 @@ unsafe fn load_shader(
     }
     Ok(shader)
 }
-
 
 pub unsafe fn init_shader_program(
     gl: &Context,
@@ -86,8 +73,7 @@ pub unsafe fn init_shader_program(
 
     gl.link_program(shader_program);
 
-    if !(gl.get_program_link_status(shader_program))
-    {
+    if !(gl.get_program_link_status(shader_program)) {
         let compiler_output = gl.get_program_info_log(shader_program);
         gl.delete_program(shader_program);
         gl.delete_shader(vert_shader);

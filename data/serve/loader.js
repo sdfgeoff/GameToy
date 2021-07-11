@@ -7,9 +7,7 @@ function load(canvas, module_path, options) {
     import(module_path)
     .then((module) => {
         module.default().then(function(obj){
-            let core = new module.Core(canvas)
-            core.start()
-            canvas.core = core
+            let core = module.load_core(canvas)
         }).catch(function(e){
             console.error("Failed to init module:", e)
             canvas.className = "error"

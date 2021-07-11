@@ -1,7 +1,7 @@
+use js_sys::Date;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsCast, JsValue};
-use js_sys::Date;
-use web_sys::{window, HtmlCanvasElement, KeyEvent, MouseEvent, WebGl2RenderingContext};
+use web_sys::HtmlCanvasElement;
 
 use gametoy;
 use gametoy::glow;
@@ -16,11 +16,11 @@ extern "C" {
 
 pub struct App {
     canvas: HtmlCanvasElement,
-    toy: gametoy::GameToy<&'static [u8]>,
+    toy: gametoy::GameToy,
 }
 
 impl App {
-    pub fn new(canvas: HtmlCanvasElement) -> Self {
+    pub fn new(canvas: HtmlCanvasElement, tar_data: Vec<u8>) -> Self {
         log("[OK] Got App");
         let (gl, shader_version) = {
             let webgl2_context = canvas
@@ -35,19 +35,13 @@ impl App {
         };
         log("[OK] Got GL");
 
-        let tardata = "This string will be read".as_bytes();
-        let tar = Archive::new(tardata);
+        let tar = Archive::new(tar_data.as_slice());
         log("[OK] Got Tar");
 
         let toy = gametoy::GameToy::new(gl, tar);
-        
-        Self {
-            canvas,
-            toy,
-        }
+
+        Self { canvas, toy }
     }
-
-
 
     fn check_resize(&mut self) {
         let client_width = self.canvas.client_width();
@@ -63,8 +57,11 @@ impl App {
             self.canvas.set_height(client_height);
 
             self.toy.resize(client_width, client_height);
-            
-            log(&format!("[OK] Resized to {}:{}", client_width, client_height));
+
+            log(&format!(
+                "[OK] Resized to {}:{}",
+                client_width, client_height
+            ));
         }
     }
 
