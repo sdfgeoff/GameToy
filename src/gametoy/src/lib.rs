@@ -7,10 +7,13 @@ mod config_file;
 mod gamedata;
 mod quad;
 mod shader;
+mod node;
+mod renderpass;
+mod output_node;
+
 
 pub struct GameToy {
     gl: glow::Context,
-    game_data: gamedata::GameData,
 
     // Time the last frame was rendered - used to calculate dt
     prev_render_time: f64,
@@ -20,7 +23,11 @@ pub struct GameToy {
     // Everything is rendered on the same quad, so lets just chuck that here
     quad: quad::Quad,
 
-    shader_program: shader::SimpleShader,
+    
+
+    nodes: Vec<Box<dyn node::Node>>,
+
+    resolution: [i32; 2],
 }
 
 impl GameToy {
@@ -32,12 +39,30 @@ impl GameToy {
 
         let quad = quad::Quad::new(&gl).expect("Failed to create quad");
 
-        let shader_program = shader::SimpleShader::new(
-            &gl,
-            include_str!("resources/shader.vert"),
-            include_str!("resources/shader.frag"),
-        )
-        .expect("Failed to create simple shader");
+        let mut nodes = vec![];
+        for node in game_data.config_file.graph.nodes.iter() {
+            match node {
+                config_file::Node::RenderPass(pass_config) => {
+                    let new_pass = renderpass::RenderPass::create_from_config(
+                        &gl, 
+                        &game_data,
+                        pass_config
+                    ).expect(&format!("Failed to create pass \"{}\" with error", pass_config.name));
+                    let pass_trait: Box<dyn node::Node> = Box::new(new_pass);
+                    nodes.push(pass_trait);
+                }
+                config_file::Node::Texture(_texture_config) => {
+                    unimplemented!()
+                }
+                config_file::Node::Output(output_config) => {
+                    let output = output_node::OutputNode::create_from_config(
+                        &gl, 
+                        output_config
+                    );
+                    nodes.push(Box::new(output));
+                }
+            }
+        }
 
         unsafe {
             gl.clear_color(0.0, 1.0, 1.0, 1.0);
@@ -45,11 +70,11 @@ impl GameToy {
 
         Self {
             gl,
-            game_data,
             prev_render_time: 0.0,
             time_since_start: 0.0,
             quad,
-            shader_program,
+            nodes,
+            resolution: [1920, 1080],
         }
     }
 
@@ -69,20 +94,23 @@ impl GameToy {
         self.time_since_start += dt;
 
         unsafe {
-            self.gl.clear(glow::COLOR_BUFFER_BIT);
             self.quad.bind(&self.gl);
 
-            self.shader_program.bind(&self.gl);
-
-            self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+            // Render all of the various passes
+            for node in self.nodes.iter_mut() {
+                node.bind(&self.gl);
+                self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+            }
         }
+        
     }
 
     // Sets the size to render at
     pub fn resize(&mut self, x_pixels: u32, y_pixels: u32) {
-        println!("[OK] Resizing to: {}, {}", x_pixels, y_pixels);
-        unsafe {
-            self.gl.viewport(0, 0, x_pixels as i32, y_pixels as i32);
+        self.resolution = [x_pixels as i32, y_pixels as i32];
+
+        for node in self.nodes.iter_mut() {
+            node.update_resolution(&self.gl, &self.resolution);
         }
     }
 
@@ -100,3 +128,4 @@ impl GameToy {
     }
     */
 }
+

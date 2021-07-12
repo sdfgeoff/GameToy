@@ -1,4 +1,4 @@
-use glow::{Context, HasContext, Program, Shader, FRAGMENT_SHADER, VERTEX_SHADER};
+use glow::{Context, HasContext, Program, FRAGMENT_SHADER, VERTEX_SHADER};
 
 #[derive(Debug)]
 pub enum ShaderError {
@@ -20,11 +20,8 @@ impl SimpleShader {
     pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
         let program = unsafe { init_shader_program(gl, vert, frag)? };
 
-        //let attrib_vertex_positions = gl.get_attrib_location(program, "aVertexPosition");
-
         Ok(Self {
             program,
-            //attrib_vertex_positions: attrib_vertex_positions as u32,
         })
     }
 
@@ -39,7 +36,7 @@ unsafe fn load_shader(
     gl: &Context,
     shader_type: u32,
     shader_text: &str,
-) -> Result<Shader, ShaderError> {
+) -> Result<glow::Shader, ShaderError> {
     let shader = gl
         .create_shader(shader_type)
         .map_err(ShaderError::ShaderAllocError)?;
