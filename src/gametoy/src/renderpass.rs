@@ -94,7 +94,7 @@ impl RenderPass {
                         gl.tex_storage_2d(
                             glow::TEXTURE_2D, 
                             1, 
-                            output_texture_slot.format.to_gl_const(), 
+                            output_texture_slot.format.to_sized_internal_format(), 
                             resolution[0], 
                             resolution[1]
                         );
@@ -105,12 +105,12 @@ impl RenderPass {
                         gl.tex_image_2d(
                             glow::TEXTURE_2D, 
                             0, 
-                            output_texture_slot.format.to_gl_const() as i32, 
+                            output_texture_slot.format.to_sized_internal_format() as i32, 
                             resolution[0], 
                             resolution[1],
                             0,
-                            glow::RGBA_INTEGER, // If we were passing in an existing image into data, this would be meaningful
-                            glow::UNSIGNED_BYTE, // If we were passing in an existing image into data, this would be meaningful
+                            output_texture_slot.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                            output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
                             None // but we are passing in None here, so the above two values are ignored.
                         );
                     }
@@ -182,12 +182,12 @@ impl Node for RenderPass {
                         gl.tex_image_2d(
                             glow::TEXTURE_2D, 
                             0, 
-                            tex.config.format.to_gl_const() as i32,
+                            tex.config.format.to_sized_internal_format() as i32,
                             self.resolution[0], 
                             self.resolution[1],
                             0,
-                            glow::RGBA_INTEGER, // If we were passing in an existing image into data, this would be meaningful
-                            glow::UNSIGNED_BYTE, // If we were passing in an existing image into data, this would be meaningful
+                            tex.config.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                            tex.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
                             None // but we are passing in None here, so the above two values are ignored.
                         );
 
