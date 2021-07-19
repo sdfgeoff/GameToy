@@ -20,9 +20,7 @@ impl SimpleShader {
     pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
         let program = unsafe { init_shader_program(gl, vert, frag)? };
 
-        Ok(Self {
-            program,
-        })
+        Ok(Self { program })
     }
 
     pub fn bind(&mut self, gl: &Context) {

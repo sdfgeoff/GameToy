@@ -35,7 +35,7 @@ fn main() {
         (gl, "#version 410", window, event_loop)
     };
 
-    let mut toy = gametoy::GameToy::new(gl, tar);
+    let mut toy = gametoy::GameToy::new(gl, tar).expect("Failed to create toy");
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -53,7 +53,8 @@ fn main() {
                     .duration_since(std::time::UNIX_EPOCH)
                     .expect("Time is pre 1970???");
 
-                toy.render(since_the_epoch.as_secs_f64());
+                toy.render(since_the_epoch.as_secs_f64())
+                    .expect("Failed to render");
                 window.swap_buffers().unwrap();
             }
             Event::WindowEvent { ref event, .. } => match event {

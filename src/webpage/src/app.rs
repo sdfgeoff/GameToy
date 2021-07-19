@@ -31,7 +31,6 @@ impl App {
                 .expect("Failed to get context 3");
             log("[OK] Got Context");
 
-
             // Grab various extensions....
             let _float_texture_ext = webgl2_context.get_extension("OES_texture_float");
             let _float_texture_ext = webgl2_context.get_extension("EXT_color_buffer_float");
@@ -41,11 +40,10 @@ impl App {
         };
         log("[OK] Got GL");
 
-
         let tar = Archive::new(tar_data.as_slice());
         log("[OK] Got Tar");
 
-        let toy = gametoy::GameToy::new(gl, tar);
+        let toy = gametoy::GameToy::new(gl, tar).expect("Failed to create toy");
 
         Self { canvas, toy }
     }
@@ -76,6 +74,6 @@ impl App {
         self.check_resize();
 
         let time = Date::new_0().get_time() / 1000.0;
-        self.toy.render(time);
+        self.toy.render(time).expect("Failed to render toy");
     }
 }

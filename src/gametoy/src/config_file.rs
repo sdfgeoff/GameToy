@@ -162,7 +162,7 @@ pub enum ExecutionMode {
 
 /// The precision and number of channels used for a buffer
 /// Not all of these formats work in webGL. In my tests
-/// RGBA8 and RGBA16F work on Chrome and Firefox. 
+/// RGBA8 and RGBA16F work on Chrome and Firefox.
 /// For a list of supposedly working ones see:
 /// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -269,7 +269,7 @@ impl OutputBufferFormat {
             Self::RGBA16UI => glow::RGBA16UI,
             Self::RGBA16I => glow::RGBA16I,
             Self::RGBA32I => glow::RGBA32I,
-            Self::RGBA32UI => glow::RGBA32UI 
+            Self::RGBA32UI => glow::RGBA32UI,
         }
     }
 
@@ -381,4 +381,3 @@ impl OutputBufferFormat {
         }
     }
 }
-
