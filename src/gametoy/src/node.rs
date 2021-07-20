@@ -24,4 +24,16 @@ pub trait Node {
 
     /// Sets the input texture. If there is no texture with the name, it returns the NodeError::NoSuchInputTexture error
     fn set_input_texture(&mut self, name: &String, texture: Texture) -> Result<(), NodeError>;
+
+    /// If a node has it's own output connected to it's own input (aka self-referential), then some
+    /// nodes will need to take special action (eg double buffering). This function is called after
+    /// the node is created to allow errors to be thrown or the node to configure itself.
+    fn set_up_self_reference(
+        &mut self,
+        _gl: &glow::Context,
+        _input_slot_name: &String,
+        _output_slot_name: &String,
+    ) -> Result<(), NodeError> {
+        Ok(())
+    }
 }

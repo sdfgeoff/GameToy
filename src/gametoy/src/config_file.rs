@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// may be generated using some sort of tool.
 /// This file contains everything needed to construct the game except
 /// for some "big" data such as textures and shaders
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigFile {
     /// Data about the game, author etc.
     pub metadata: MetaData,
@@ -14,7 +14,7 @@ pub struct ConfigFile {
 }
 
 /// Contains information about the game/author etc.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MetaData {
     /// The name of the game. This is displayed while loading, on the window title etc.
     pub game_name: String,
@@ -36,7 +36,7 @@ pub struct MetaData {
 }
 
 /// Configures the rendergraph - the thing that actually runs the game.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphConfig {
     /// A node is a "process" that takes some inputs and generates some output
     /// Note that the order is important - the order in here defines
@@ -48,7 +48,7 @@ pub struct GraphConfig {
 }
 
 /// Connects two nodes in the rendergraph
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Link {
     /// The name of the node to start on
     pub start_node: String,
@@ -63,7 +63,7 @@ pub struct Link {
 
 /// A node in the rendergraph. A rendergraph node takes a bunch of
 /// texture inputs and processes them to create some outputs
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Node {
     /// A static texture as defined in a file
     Texture(TextureConfig),
@@ -76,7 +76,7 @@ pub enum Node {
 }
 
 /// A node containing a static texture
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TextureConfig {
     /// the path to read the texture from
     pub name: String,
@@ -84,13 +84,13 @@ pub struct TextureConfig {
 }
 
 /// The node that actually writes to the screen
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OutputConfig {
     pub name: String,
 }
 
 /// A node that runs a GLSL shader on it's inputs.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RenderPassConfig {
     /// the name of the renderpass
     pub name: String,
@@ -120,15 +120,10 @@ pub struct OutputBufferConfig {
 
     /// The texture format for the output buffer.
     pub format: OutputBufferFormat,
-
-    /// Should the texture behind this output double buffer?
-    /// Double buffering uses more VRAM, but allows a renderpass
-    /// to sample it's own output on subsequent frames.
-    pub double_buffer: bool,
 }
 
 /// An input channel for a `RenderPass`
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InputBufferConfig {
     /// the name of the input channel
     pub name: String,
@@ -146,7 +141,7 @@ pub enum ResolutionScalingMode {
 }
 
 /// When should the renderpass execute
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ExecutionMode {
     /// Draw on every frame
     Always,

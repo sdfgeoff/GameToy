@@ -10,7 +10,7 @@ The configuration for this node allows controlling the names of the
 input and output slots as well as their pixel formats, and the resolution.
 
 
-TODOs: 
+TODOs:
  - Double buffering so that a node can read from itself
 
 !*/
@@ -33,20 +33,31 @@ pub struct RenderPass {
     /// The shader program that is used to render this renderpass
     shader_program: SimpleShader,
 
-    /// The framebuffer that the shader renders into
-    framebuffer: glow::Framebuffer,
-
     /// Stores the current resolution of this renderpass. This is used
     resolution: [i32; 2],
-    
-    /// Controls how the RenderPass behaves when calling `update_resolution`
-    resolution_scaling_mode: config_file::ResolutionScalingMode,
+
+    /// Configuration of this renderpass. This is needed as some information (eg scaling mode) is needed
+    /// at runtime.
+    config: config_file::RenderPassConfig,
+
+    /// The textures that this renderpass reads from when rendering.
+    input_textures: HashMap<String, Option<glow::Texture>>,
+
+    /// The framebuffer that the shader renders into
+    framebuffer: glow::Framebuffer,
 
     /// The textures that this renderpass outputs. Other nodes can use these as inputs.
     output_textures: HashMap<String, OutputTexture>,
 
-    /// The textures that this renderpass reads from when rendering.
-    input_textures: HashMap<String, Option<glow::Texture>>,
+    /// If this render-pass is self-referential, then we need another framebuffer to render into
+    back_framebuffer: Option<glow::Framebuffer>,
+
+    /// If this render-pass is self-referential, then we need another lot of textures to render into.
+    back_output_textures: Option<HashMap<String, OutputTexture>>,
+
+    /// Indicates if the textures to use are the front or back set. Whenever there is a
+    /// `back_frambuffer`, this value will be toggled with each call to bind()
+    use_back_buffers: bool,
 }
 
 /// Container for a texture and it's configuration.
@@ -69,7 +80,7 @@ pub enum RenderPassError {
 
     /// This renderpass has two input slots with the same name
     DuplicateInputSlotName(String),
-    
+
     /// This renderpass has two output slots with the same name
     DuplicateOutputSlotName(String),
 
@@ -104,20 +115,6 @@ impl RenderPass {
         )
         .map_err(RenderPassError::ShaderError)?;
 
-        // Create the framebuffer
-        let framebuffer = unsafe {
-            gl.create_framebuffer()
-                .map_err(RenderPassError::CreateFramebufferFailed)?
-        };
-        // Set it up so we are operating on our framebuffer and have a texture unit to play with
-        unsafe {
-            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
-            gl.active_texture(glow::TEXTURE0);
-        }
-
-        let mut attachment_id = 0;
-        let mut buffers = vec![];
-
         let resolution = match config.resolution_scaling_mode {
             config_file::ResolutionScalingMode::Fixed(width, height) => [width, height],
             config_file::ResolutionScalingMode::ViewportScale(x_percent, y_percent) => {
@@ -125,95 +122,11 @@ impl RenderPass {
             }
         };
 
-        let mut output_textures = HashMap::new();
-
-        for output_texture_slot in config.output_texture_slots.iter() {
-            unsafe {
-                let new_tex = gl
-                    .create_texture()
-                    .map_err(RenderPassError::CreateTextureFailed)?;
-                if output_textures
-                    .insert(
-                        output_texture_slot.name.clone(),
-                        OutputTexture {
-                            tex: new_tex,
-                            config: output_texture_slot.clone(),
-                        },
-                    )
-                    .is_some()
-                {
-                    return Err(RenderPassError::DuplicateOutputSlotName(
-                        output_texture_slot.name.clone(),
-                    ));
-                }
-
-                gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
-                //gl.pixel_storei(flow::UNPACK_FLIP_Y_WEBGL, 0);
-
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MAG_FILTER,
-                    glow::NEAREST as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MIN_FILTER,
-                    glow::NEAREST as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_S,
-                    glow::CLAMP_TO_EDGE as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_T,
-                    glow::CLAMP_TO_EDGE as i32,
-                );
-
-                match config.resolution_scaling_mode {
-                    config_file::ResolutionScalingMode::Fixed(_, _) => {
-                        // We know this isn't going to change, so we can use tex_storage_2d
-                        gl.tex_storage_2d(
-                            glow::TEXTURE_2D,
-                            1,
-                            output_texture_slot.format.to_sized_internal_format(),
-                            resolution[0],
-                            resolution[1],
-                        );
-                    }
-                    config_file::ResolutionScalingMode::ViewportScale(_, _) => {
-                        // For textures that can change size we use TexImage2d
-                        gl.tex_image_2d(
-                            glow::TEXTURE_2D,
-                            0,
-                            output_texture_slot.format.to_sized_internal_format() as i32,
-                            resolution[0],
-                            resolution[1],
-                            0,
-                            output_texture_slot.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
-                            output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
-                            None, // but we are passing in None here, so the above two values are ignored.
-                        );
-                    }
-                }
-
-                let attachment = color_attachment_int_to_gl(attachment_id);
-                buffers.push(attachment);
-
-                gl.framebuffer_texture_2d(
-                    glow::FRAMEBUFFER,
-                    attachment,
-                    glow::TEXTURE_2D,
-                    Some(new_tex),
-                    0,
-                );
-                attachment_id += 1;
-            }
-        }
+        let (framebuffer, output_textures) =
+            create_framebuffer_and_textures(gl, config, resolution)?;
 
         let mut input_textures = HashMap::new();
-        for input_texture_slot in config.output_texture_slots.iter() {
+        for input_texture_slot in config.input_texture_slots.iter() {
             if input_textures
                 .insert(input_texture_slot.name.clone(), None)
                 .is_some()
@@ -224,20 +137,132 @@ impl RenderPass {
             }
         }
 
-        unsafe {
-            gl.draw_buffers(&buffers);
-        }
-
         Ok(Self {
             name: config.name.clone(),
             shader_program,
             framebuffer,
             resolution,
             input_textures,
-            resolution_scaling_mode: config.resolution_scaling_mode.clone(),
+            config: config.clone(),
             output_textures,
+            back_framebuffer: None,
+            back_output_textures: None,
+            use_back_buffers: false,
         })
     }
+}
+
+fn create_framebuffer_and_textures(
+    gl: &glow::Context,
+    config: &config_file::RenderPassConfig,
+    resolution: [i32; 2],
+) -> Result<(glow::Framebuffer, HashMap<String, OutputTexture>), RenderPassError> {
+    // Create the framebuffer
+    let framebuffer = unsafe {
+        gl.create_framebuffer()
+            .map_err(RenderPassError::CreateFramebufferFailed)?
+    };
+    // Set it up so we are operating on our framebuffer and have a texture unit to play with
+    unsafe {
+        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
+        gl.active_texture(glow::TEXTURE0);
+    }
+
+    let mut attachment_id = 0;
+    let mut buffers = vec![];
+
+    let mut output_textures = HashMap::new();
+
+    for output_texture_slot in config.output_texture_slots.iter() {
+        unsafe {
+            let new_tex = gl
+                .create_texture()
+                .map_err(RenderPassError::CreateTextureFailed)?;
+            if output_textures
+                .insert(
+                    output_texture_slot.name.clone(),
+                    OutputTexture {
+                        tex: new_tex,
+                        config: output_texture_slot.clone(),
+                    },
+                )
+                .is_some()
+            {
+                return Err(RenderPassError::DuplicateOutputSlotName(
+                    output_texture_slot.name.clone(),
+                ));
+            }
+
+            gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
+            //gl.pixel_storei(flow::UNPACK_FLIP_Y_WEBGL, 0);
+
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_MAG_FILTER,
+                glow::NEAREST as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_MIN_FILTER,
+                glow::NEAREST as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_WRAP_S,
+                glow::CLAMP_TO_EDGE as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_WRAP_T,
+                glow::CLAMP_TO_EDGE as i32,
+            );
+
+            match config.resolution_scaling_mode {
+                config_file::ResolutionScalingMode::Fixed(_, _) => {
+                    // We know this isn't going to change, so we can use tex_storage_2d
+                    gl.tex_storage_2d(
+                        glow::TEXTURE_2D,
+                        1,
+                        output_texture_slot.format.to_sized_internal_format(),
+                        resolution[0],
+                        resolution[1],
+                    );
+                }
+                config_file::ResolutionScalingMode::ViewportScale(_, _) => {
+                    // For textures that can change size we use TexImage2d
+                    gl.tex_image_2d(
+                        glow::TEXTURE_2D,
+                        0,
+                        output_texture_slot.format.to_sized_internal_format() as i32,
+                        resolution[0],
+                        resolution[1],
+                        0,
+                        output_texture_slot.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                        output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
+                        None, // but we are passing in None here, so the above two values are ignored.
+                    );
+                }
+            }
+
+            let attachment = color_attachment_int_to_gl(attachment_id);
+            buffers.push(attachment);
+
+            gl.framebuffer_texture_2d(
+                glow::FRAMEBUFFER,
+                attachment,
+                glow::TEXTURE_2D,
+                Some(new_tex),
+                0,
+            );
+            attachment_id += 1;
+        }
+    }
+
+    unsafe {
+        gl.draw_buffers(&buffers);
+    }
+
+    Ok((framebuffer, output_textures))
 }
 
 impl node::Node for RenderPass {
@@ -247,14 +272,25 @@ impl node::Node for RenderPass {
 
     fn bind(&mut self, gl: &glow::Context) {
         unsafe {
-            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
+            if self.back_framebuffer.is_some() {
+                // If we have a back framebuffer, switch it for next time.
+                self.use_back_buffers = !self.use_back_buffers;
+            }
+
+            if self.use_back_buffers {
+                assert!(self.back_framebuffer.is_some());
+                gl.bind_framebuffer(glow::FRAMEBUFFER, self.back_framebuffer);
+            } else {
+                gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
+            }
+
             gl.viewport(0, 0, self.resolution[0], self.resolution[1]);
             self.shader_program.bind(gl);
         }
     }
 
     fn update_resolution(&mut self, gl: &glow::Context, screen_resolution: &[i32; 2]) {
-        match self.resolution_scaling_mode {
+        match self.config.resolution_scaling_mode {
             config_file::ResolutionScalingMode::Fixed(_, _) => {}
             config_file::ResolutionScalingMode::ViewportScale(x_percent, y_percent) => {
                 self.resolution = [
@@ -279,17 +315,45 @@ impl node::Node for RenderPass {
                             None, // but we are passing in None here, so the above two values are ignored.
                         );
                     }
+
+                    // if we are double-buffering, also resize our other-output-textures
+                    if let Some(output_textures) = &self.back_output_textures {
+                        for (_texname, tex) in output_textures.iter() {
+                            gl.bind_texture(glow::TEXTURE_2D, Some(tex.tex));
+
+                            gl.tex_image_2d(
+                                glow::TEXTURE_2D,
+                                0,
+                                tex.config.format.to_sized_internal_format() as i32,
+                                self.resolution[0],
+                                self.resolution[1],
+                                0,
+                                tex.config.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                                tex.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
+                                None, // but we are passing in None here, so the above two values are ignored.
+                            );
+                        }
+                    }
                 }
             }
         }
     }
 
     fn get_output_texture(&self, name: &String) -> Result<glow::Texture, node::NodeError> {
-        self.output_textures
-            .get(name)
-            .map(|x| x.tex)
-            .ok_or(node::NodeError::NoSuchOutputTexture(name.clone()))
-        // TODO: double buffering will be more involved here
+        if self.use_back_buffers {
+            // If we are rendering to the front textures this frame, return the back textures
+            self.back_output_textures
+                .as_ref()
+                .expect("Trying to use backbuffers when they don't exist. Invalid state")
+                .get(name)
+                .map(|x| x.tex)
+                .ok_or(node::NodeError::NoSuchOutputTexture(name.clone()))
+        } else {
+            self.output_textures
+                .get(name)
+                .map(|x| x.tex)
+                .ok_or(node::NodeError::NoSuchOutputTexture(name.clone()))
+        }
     }
 
     fn set_input_texture(
@@ -304,6 +368,21 @@ impl node::Node for RenderPass {
             }
             None => Err(node::NodeError::NoSuchInputTexture(name.clone())),
         }
+    }
+
+    fn set_up_self_reference(
+        &mut self,
+        gl: &glow::Context,
+        _: &String,
+        _: &String,
+    ) -> Result<(), node::NodeError> {
+        let (framebuffer, output_textures) =
+            create_framebuffer_and_textures(gl, &self.config, self.resolution)
+                .expect("Failed to create backbuffer");
+
+        self.back_framebuffer = Some(framebuffer);
+        self.back_output_textures = Some(output_textures);
+        Ok(())
     }
 }
 

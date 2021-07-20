@@ -5,7 +5,7 @@ The Output Node
 This node has a single input texture slot named "col". Whatever
 texture is connected to this is draw directly onto the screen.
 
-This buffer is always at the resolution of the users display. 
+This buffer is always at the resolution of the users display.
 
 !*/
 

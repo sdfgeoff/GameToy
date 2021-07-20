@@ -24,6 +24,7 @@ pub enum GameToyError {
     NoSuchNodeName(String),
     GetInputTextureFailed(String, node::NodeError),
     BindInputTextureFailed(String, node::NodeError),
+    SelfReferenceSetupFailed(String, node::NodeError),
 
     /// Raised whenever the internal mapping of node->links does not have an entry for a specific node.
     InvalidLinkVec(),
@@ -111,6 +112,16 @@ impl GameToy {
                 .get_mut(end_node.borrow().get_name())
                 .ok_or(GameToyError::InvalidLinkVec())?;
 
+            // Detects if a node self-references. The behaviour is up to the node to decide.
+            if Rc::ptr_eq(start_node, end_node) {
+                start_node
+                    .borrow_mut()
+                    .set_up_self_reference(&gl, &link.start_output_slot, &link.end_input_slot)
+                    .map_err(|e| {
+                        GameToyError::SelfReferenceSetupFailed(link.start_node.clone(), e)
+                    })?;
+            }
+
             linkvec.push(Link {
                 start_node: start_node.clone(),
                 start_output_slot: link.start_output_slot.clone(),
@@ -163,13 +174,32 @@ impl GameToy {
                     .iter()
                 {
                     assert!(Rc::ptr_eq(node, &link.end_node));
-                    let tex = link
-                        .start_node
-                        .borrow()
-                        .get_output_texture(&link.start_output_slot)
-                        .map_err(|e| {
-                            GameToyError::GetInputTextureFailed(node_mut.get_name().clone(), e)
-                        })?;
+
+                    let tex = {
+                        if Rc::ptr_eq(node, &link.start_node) {
+                            // If we are having a node read from a previous version of itself
+                            // we can't borrow it twice.
+                            node_mut
+                                .get_output_texture(&link.start_output_slot)
+                                .map_err(|e| {
+                                    GameToyError::GetInputTextureFailed(
+                                        node_mut.get_name().clone(),
+                                        e,
+                                    )
+                                })?
+                        } else {
+                            link.start_node
+                                .borrow()
+                                .get_output_texture(&link.start_output_slot)
+                                .map_err(|e| {
+                                    GameToyError::GetInputTextureFailed(
+                                        node_mut.get_name().clone(),
+                                        e,
+                                    )
+                                })?
+                        }
+                    };
+
                     node_mut
                         .set_input_texture(&link.end_input_slot, tex)
                         .map_err(|e| {
