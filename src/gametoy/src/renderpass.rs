@@ -1,3 +1,20 @@
+/*!
+The Renderpass Node
+-------------------
+
+The renderpass node is the heart of gametoy. It is responsible for
+taking a bunch of input textures and turning them into a bunch of
+output textures. It does this by running a GLSL shader.
+
+The configuration for this node allows controlling the names of the
+input and output slots as well as their pixel formats, and the resolution.
+
+
+TODOs: 
+ - Double buffering so that a node can read from itself
+
+!*/
+
 use super::config_file;
 use super::gamedata::GameData;
 use super::node;
@@ -6,18 +23,33 @@ use glow::HasContext;
 
 use std::collections::HashMap;
 
+/// Contains data necessary for rendering this renderpass in isolation
+/// It does not contain information about where input textures come from.
 pub struct RenderPass {
+    /// What this renderpass is called. This is a human-readable name that must be
+    /// unique in the program
     name: String,
-    shader_program: SimpleShader,
-    framebuffer: glow::Framebuffer,
-    resolution: [i32; 2],
 
+    /// The shader program that is used to render this renderpass
+    shader_program: SimpleShader,
+
+    /// The framebuffer that the shader renders into
+    framebuffer: glow::Framebuffer,
+
+    /// Stores the current resolution of this renderpass. This is used
+    resolution: [i32; 2],
+    
+    /// Controls how the RenderPass behaves when calling `update_resolution`
     resolution_scaling_mode: config_file::ResolutionScalingMode,
 
+    /// The textures that this renderpass outputs. Other nodes can use these as inputs.
     output_textures: HashMap<String, OutputTexture>,
+
+    /// The textures that this renderpass reads from when rendering.
     input_textures: HashMap<String, Option<glow::Texture>>,
 }
 
+/// Container for a texture and it's configuration.
 struct OutputTexture {
     tex: glow::Texture,
     config: config_file::OutputBufferConfig,
@@ -25,12 +57,26 @@ struct OutputTexture {
 
 #[derive(Debug)]
 pub enum RenderPassError {
+    /// The GPU failed to allocate the framebuffer
     CreateFramebufferFailed(String),
+
+    /// The GPU failed to allocate a texture
     CreateTextureFailed(String),
+
+    /// The text files that should contain the shader source code
+    /// do not exist in the supplied GameData
     MissingShaderSource(String),
+
+    /// This renderpass has two input slots with the same name
     DuplicateInputSlotName(String),
+    
+    /// This renderpass has two output slots with the same name
     DuplicateOutputSlotName(String),
+
+    /// There is no shader defined for this renderpass!
     NoShader,
+
+    /// Shader failed to compile/link etc.
     ShaderError(ShaderError),
 }
 

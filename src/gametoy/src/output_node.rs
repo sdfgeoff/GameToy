@@ -1,3 +1,14 @@
+/*!
+The Output Node
+---------------
+
+This node has a single input texture slot named "col". Whatever
+texture is connected to this is draw directly onto the screen.
+
+This buffer is always at the resolution of the users display. 
+
+!*/
+
 use super::config_file;
 use super::node;
 use super::shader;
@@ -54,12 +65,12 @@ impl node::Node for OutputNode {
             self.shader_program.bind(gl);
 
             // Tell WebGL which texture unit we are configuring
-            let texture_unit = glow::TEXTURE0;
-            gl.active_texture(texture_unit);
+            let texture_unit_id = 0;
+            gl.active_texture(glow::TEXTURE0 + texture_unit_id);
             // Tell WebGL what texture to load into the texture unit
             gl.bind_texture(glow::TEXTURE_2D, self.output_texture);
             // Tell WebGL which uniform refers to this texture unit
-            gl.uniform_1_i32(Some(&self.output_tex_uniform), 0);
+            gl.uniform_1_i32(Some(&self.output_tex_uniform), texture_unit_id as i32);
         }
     }
 
