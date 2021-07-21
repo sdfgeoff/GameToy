@@ -29,6 +29,7 @@ endif
 
 
 
+
 # Build the wasm
 $(WASM_ARTIFACT_DIR)webpage.wasm:
 	cd $(WORKSPACE_DIR); cargo build --package webpage --target wasm32-unknown-unknown $(BUILD_FLAGS)
@@ -53,7 +54,11 @@ game: web engine
 
 
 play:
-	$(EXECUTABLE_OUTPUT_FILE)
+ifndef DEMO
+	$(error You need to specify a demo. Eg: "make play DEMO=clock". Available demos are: $(shell ls ./demos))
+else
+	$(EXECUTABLE_OUTPUT_FILE) ./demos/$(DEMO)
+endif
 
 
 check: 

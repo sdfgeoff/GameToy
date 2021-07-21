@@ -12,7 +12,10 @@ const DATA_FOLDER: &'static str = "data";
 
 fn main() {
     // Attempt to read the data package
-    let tar = load_tar().expect("Unable to load TAR");
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+
+    let tar = load_tar(args).expect("Unable to load TAR");
 
     // Create our window
     let (gl, shader_version, window, event_loop) = {
@@ -74,13 +77,26 @@ fn main() {
     });
 }
 
-fn load_tar() -> Option<tar::Archive<fs::File>> {
+fn load_tar(args: Vec<String>) -> Option<tar::Archive<fs::File>> {
     let exe_path = env::current_exe().expect("Failed to determine executable location");
 
     let mut exe_dir = exe_path.clone();
     exe_dir.pop();
-    let mut data_folder = exe_dir.clone();
-    data_folder.push(DATA_FOLDER);
+
+    let data_folder = {
+        if args.len() == 2 {
+            let mut data_folder = env::current_dir().expect("Unable to determine CWD").clone();
+            data_folder.push(args[1].clone());
+            println!("[OK] Using override data directory: {:?}", data_folder);
+            data_folder
+        } else {
+            let mut data_folder = exe_dir.clone();
+            data_folder.push(DATA_FOLDER);
+            println!("[OK] Using default data directory: {:?}", data_folder);
+            data_folder
+        }
+    };
+
     let mut tar_file_path = exe_dir.clone();
     tar_file_path.push(TAR_FILE);
 

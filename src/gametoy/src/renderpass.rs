@@ -210,6 +210,16 @@ impl RenderPass {
             "iDate".to_string(),
         );
 
+        // Make sure that our input textures are known
+        for input_texture_slot in config.input_texture_slots.iter() {
+            insert_uniform_if_exists(
+                gl,
+                &mut uniform_map,
+                &shader_program.program,
+                input_texture_slot.name.clone(),
+            );
+        }
+
         Ok(Self {
             name: config.name.clone(),
             shader_program,
@@ -405,6 +415,19 @@ impl node::Node for RenderPass {
                     game_state.date[2] as f32,
                     game_state.date[3] as f32,
                 );
+            }
+
+            // Textures
+            for (texture_id, (texture_name, texture)) in self.input_textures.iter().enumerate() {
+                let texture_unit_id = texture_id as u32;
+                gl.active_texture(glow::TEXTURE0 + texture_unit_id);
+                gl.bind_texture(glow::TEXTURE_2D, *texture);
+                // Tell WebGL which uniform refers to this texture unit
+                if let Some(loc) = self.uniform_map.get(texture_name) {
+                    gl.uniform_1_i32(Some(loc), texture_unit_id as i32);
+                } else {
+                    panic!("No Uniform for input texture");
+                }
             }
 
             quad.bind(gl, self.shader_program.attrib_vertex_positions);
