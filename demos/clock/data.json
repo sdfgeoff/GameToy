@@ -1,0 +1,39 @@
+{
+    "metadata": {
+        "game_name": "Clock",
+        "game_version": "0.0.0",
+        "author_name": "iq",
+        "website": "https://www.shadertoy.com/view/lsXGz8",
+        "license": "Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License",
+        "release_date": "2013-03-02"
+    },
+    "graph": {
+        "nodes": [
+            {
+                "RenderPass":{
+                    "name": "Clock",
+                    "output_texture_slots": [
+                        {"name": "fragColor", "format": "RGBA8"}
+                    ],
+                    "input_texture_slots": [],
+                    "resolution_scaling_mode": {"ViewportScale":[1.0,1.0]},
+                    "fragment_shader_paths": ["clock.frag"],
+                    "execution_mode": "Always"
+                }
+            },
+            {
+                "Output": {
+                    "name": "Output"
+                }
+            }
+        ],
+        "links": [
+            {
+                    "start_node": "Clock", 
+                    "start_output_slot": "fragColor",
+                    "end_node": "Output",
+                    "end_input_slot": "col"
+            }
+        ]
+    }
+}

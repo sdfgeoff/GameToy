@@ -1,0 +1,39 @@
+{
+    "metadata": {
+        "game_name": "Display Uniforms",
+        "game_version": "0.0.0",
+        "author_name": "sdfgeoff",
+        "website": "http://nowhere.com",
+        "license": "CC-BY",
+        "release_date": "2021-07-21"
+    },
+    "graph": {
+        "nodes": [
+            {
+                "RenderPass":{
+                    "name": "Uniforms",
+                    "output_texture_slots": [
+                        {"name": "col", "format": "RGBA8"}
+                    ],
+                    "input_texture_slots": [],
+                    "resolution_scaling_mode": {"ViewportScale":[1.0,1.0]},
+                    "fragment_shader_paths": ["display_uniforms.frag"],
+                    "execution_mode": "Always"
+                }
+            },
+            {
+                "Output": {
+                    "name": "Output"
+                }
+            }
+        ],
+        "links": [
+            {
+                    "start_node": "Uniforms", 
+                    "start_output_slot": "col",
+                    "end_node": "Output",
+                    "end_input_slot": "col"
+            }
+        ]
+    }
+}

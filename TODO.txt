@@ -1,0 +1,32 @@
+Program Features
+
+[x] Single Shader
+[x] Read from tar file
+[x] Framebuffer (multiple shaders)
+[x] Read from config file
+[x] Framebuffer supports configuring pixel format
+[x] Framebuffer supports setting resolution + scaling mode
+[x] Link between shaders based on config file
+[x] Double buffering to allow a renderpass to read from itself
+[x] Auto-generate uniforms (eg for input channels + input channel resolution)
+[x] shader version pragma auto-inserted
+[x] Supports shadertoy default uniforms (Except mouse+channel resolution)
+
+[ ] Static Texture loading
+[ ] Keyboard Texture
+[ ] Mouse Input
+[ ] Channel resolution uniforms
+[ ] Detects if inputs "dirty" before rendering
+
+Possible Features:
+[ ] Graph Editor
+[ ] Reload TAR file without restarting?
+[ ] Proper shutdown sequence?
+
+
+Meta:
+[ ] Upload to GIT
+[ ] Strip the binary to reduce filesize
+[ ] Better System for demo programs (eg. pass in path to pack file on desktop)
+[ ] Build on CI (arrgh! No!!!)
+[ ] Build/Test on Windows
