@@ -33,8 +33,11 @@ pub struct RenderPass {
     /// The shader program that is used to render this renderpass
     shader_program: SimpleShader,
 
-    /// Stores the current resolution of this renderpass. This is used
+    /// Stores the current resolution of this renderpass. This is used both by the shader
+    /// via the iResolution variable and to set the glViewport
     resolution: [i32; 2],
+
+    frame: u32,
 
     /// Configuration of this renderpass. This is needed as some information (eg scaling mode) is needed
     /// at runtime.
@@ -58,6 +61,8 @@ pub struct RenderPass {
     /// Indicates if the textures to use are the front or back set. Whenever there is a
     /// `back_frambuffer`, this value will be toggled with each call to bind()
     use_back_buffers: bool,
+
+    uniform_map: HashMap<String, glow::UniformLocation>,
 }
 
 /// Container for a texture and it's configuration.
@@ -98,6 +103,9 @@ impl RenderPass {
         config: &config_file::RenderPassConfig,
     ) -> Result<Self, RenderPassError> {
         // Load and compile the shader
+
+        let shader_preamble = include_str!("./resources/renderpass_static.frag");
+
         let mut fragment_source = String::new();
         for shader_path in config.fragment_shader_paths.iter() {
             let source = gamedata.shader_sources.get(shader_path).ok_or(
@@ -108,12 +116,16 @@ impl RenderPass {
         if fragment_source.len() == 0 {
             Err(RenderPassError::NoShader)?;
         }
-        let shader_program = SimpleShader::new(
+
+        let full_shader_code = String::new() + shader_preamble + &fragment_source;
+
+        let mut shader_program = SimpleShader::new(
             gl,
             include_str!("./resources/shader.vert"),
-            &fragment_source,
+            &full_shader_code,
         )
         .map_err(RenderPassError::ShaderError)?;
+        shader_program.bind(gl);
 
         let resolution = match config.resolution_scaling_mode {
             config_file::ResolutionScalingMode::Fixed(width, height) => [width, height],
@@ -137,6 +149,45 @@ impl RenderPass {
             }
         }
 
+        let mut uniform_map = HashMap::new();
+
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iResolution".to_string(),
+        );
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iTime".to_string(),
+        );
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iTimeDelta".to_string(),
+        );
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iFrame".to_string(),
+        );
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iMouse".to_string(),
+        );
+        insert_uniform_if_exists(
+            gl,
+            &mut uniform_map,
+            &shader_program.program,
+            "iDate".to_string(),
+        );
+
         Ok(Self {
             name: config.name.clone(),
             shader_program,
@@ -148,7 +199,21 @@ impl RenderPass {
             back_framebuffer: None,
             back_output_textures: None,
             use_back_buffers: false,
+            frame: 0,
+            uniform_map,
         })
+    }
+}
+
+fn insert_uniform_if_exists(
+    gl: &glow::Context,
+    uniform_map: &mut HashMap<String, glow::UniformLocation>,
+    program: &glow::Program,
+    uniform_name: String,
+) {
+    let uniform_location = unsafe { gl.get_uniform_location(*program, &uniform_name) };
+    if let Some(loc) = uniform_location {
+        uniform_map.insert(uniform_name, loc);
     }
 }
 
@@ -270,7 +335,7 @@ impl node::Node for RenderPass {
         &self.name
     }
 
-    fn bind(&mut self, gl: &glow::Context) {
+    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad) {
         unsafe {
             if self.back_framebuffer.is_some() {
                 // If we have a back framebuffer, switch it for next time.
@@ -286,7 +351,23 @@ impl node::Node for RenderPass {
 
             gl.viewport(0, 0, self.resolution[0], self.resolution[1]);
             self.shader_program.bind(gl);
+
+            // Builtin Uniforms
+            if let Some(loc) = self.uniform_map.get("iResolution") {
+                gl.uniform_3_f32(
+                    Some(&loc),
+                    self.resolution[0] as f32,
+                    self.resolution[1] as f32,
+                    1.0,
+                );
+            }
+            if let Some(loc) = self.uniform_map.get("iFrame") {
+                gl.uniform_1_u32(Some(&loc), self.frame);
+            }
+
+            quad.bind(gl, self.shader_program.attrib_vertex_positions);
         }
+        self.frame = self.frame.overflowing_add(1).0;
     }
 
     fn update_resolution(&mut self, gl: &glow::Context, screen_resolution: &[i32; 2]) {

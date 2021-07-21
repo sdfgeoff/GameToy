@@ -13,14 +13,21 @@ pub enum ShaderError {
 
 pub struct SimpleShader {
     pub program: Program,
-    //pub attrib_vertex_positions: u32,
+    pub attrib_vertex_positions: u32,
 }
 
 impl SimpleShader {
     pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
         let program = unsafe { init_shader_program(gl, vert, frag)? };
+        let attrib_vertex_positions = unsafe {
+            gl.get_attrib_location(program, "aVertexPosition")
+                .expect("No vertx positions?")
+        };
 
-        Ok(Self { program })
+        Ok(Self {
+            program,
+            attrib_vertex_positions,
+        })
     }
 
     pub fn bind(&mut self, gl: &Context) {
@@ -44,6 +51,7 @@ unsafe fn load_shader(
     if !gl.get_shader_compile_status(shader) {
         let compiler_output = gl.get_shader_info_log(shader);
         gl.delete_shader(shader);
+        println!("{}", shader_text);
         return Err(ShaderError::ShaderCompileError {
             shader_type,
             compiler_output: compiler_output,

@@ -1,13 +1,15 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 in vec2 aVertexPosition;
 
-out vec2 screen_pos;
+in vec2 iResolution;
+out vec2 FragCoordUV;
 
 void main() {
-	screen_pos = aVertexPosition;
+        vec2 screen_pos = aVertexPosition * 2.0 - vec2(1.0);
+	FragCoordUV = aVertexPosition;
 	gl_Position = vec4(
-                screen_pos * 2.0 - vec2(1.0),
+                screen_pos,
                 0.0,
                 1.0
         );

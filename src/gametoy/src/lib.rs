@@ -161,8 +161,6 @@ impl GameToy {
         self.time_since_start += dt;
 
         unsafe {
-            self.quad.bind(&self.gl);
-
             // Render all of the various passes
             for node in &self.nodes {
                 let mut node_mut = node.borrow_mut();
@@ -206,7 +204,8 @@ impl GameToy {
                             GameToyError::BindInputTextureFailed(node_mut.get_name().clone(), e)
                         })?;
                 }
-                node_mut.bind(&self.gl);
+                node_mut.bind(&self.gl, &self.quad);
+
                 self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
             }
         }

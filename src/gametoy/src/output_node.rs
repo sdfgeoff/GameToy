@@ -58,11 +58,12 @@ impl node::Node for OutputNode {
         self.resolution = screen_resolution.clone();
     }
 
-    fn bind(&mut self, gl: &glow::Context) {
+    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, None); // Bind to the viewport - a framebuffer of None
             gl.viewport(0, 0, self.resolution[0], self.resolution[1]);
             self.shader_program.bind(gl);
+            quad.bind(gl, self.shader_program.attrib_vertex_positions);
 
             // Tell WebGL which texture unit we are configuring
             let texture_unit_id = 0;
