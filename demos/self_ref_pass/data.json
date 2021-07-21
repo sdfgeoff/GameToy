@@ -1,0 +1,47 @@
+{
+    "metadata": {
+        "game_name": "A pass that references itself",
+        "game_version": "0.0.0",
+        "author_name": "sdfgeoff",
+        "website": "http://nowhere.com",
+        "license": "CC-BY",
+        "release_date": "2021-07-21"
+    },
+    "graph": {
+        "nodes": [
+            {
+                "RenderPass":{
+                    "name": "SelfRefPass",
+                    "output_texture_slots": [
+                        {"name": "state", "format": "RGBA8"}
+                    ],
+                    "input_texture_slots": [
+                        {"name": "prev_state"}
+                    ],
+                    "resolution_scaling_mode": {"Fixed":[512,512]},
+                    "fragment_shader_paths": ["self_ref_pass.frag"],
+                    "execution_mode": "Always"
+                }
+            },
+            {
+                "Output": {
+                    "name": "Output"
+                }
+            }
+        ],
+        "links": [
+            {
+                    "start_node": "SelfRefPass", 
+                    "start_output_slot": "state",
+                    "end_node": "SelfRefPass",
+                    "end_input_slot": "prev_state"
+            },
+            {
+                    "start_node": "SelfRefPass", 
+                    "start_output_slot": "state",
+                    "end_node": "Output",
+                    "end_input_slot": "col"
+            }
+        ]
+    }
+}

@@ -58,10 +58,6 @@ pub struct RenderPass {
     /// If this render-pass is self-referential, then we need another lot of textures to render into.
     back_output_textures: Option<HashMap<String, OutputTexture>>,
 
-    /// Indicates if the textures to use are the front or back set. Whenever there is a
-    /// `back_frambuffer`, this value will be toggled with each call to bind()
-    use_back_buffers: bool,
-
     uniform_map: HashMap<String, glow::UniformLocation>,
 }
 
@@ -69,6 +65,70 @@ pub struct RenderPass {
 struct OutputTexture {
     tex: glow::Texture,
     config: config_file::OutputBufferConfig,
+}
+
+impl OutputTexture {
+    // Creates and sets up magnification filters for a texture.
+    // IMPORTANT: does not set up storage for the texture. You will need
+    // to re-bind the texture and do a call to `gl.tex_image_2d` or `gl.tex_storage_2d`
+    fn new(
+        gl: &glow::Context,
+        config: &config_file::OutputBufferConfig,
+    ) -> Result<Self, RenderPassError> {
+        let new_tex = unsafe {
+            gl.create_texture()
+                .map_err(RenderPassError::CreateTextureFailed)?
+        };
+
+        unsafe {
+            gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
+            //gl.pixel_storei(flow::UNPACK_FLIP_Y_WEBGL, 0);
+
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_MAG_FILTER,
+                glow::NEAREST as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_MIN_FILTER,
+                glow::NEAREST as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_WRAP_S,
+                glow::CLAMP_TO_EDGE as i32,
+            );
+            gl.tex_parameter_i32(
+                glow::TEXTURE_2D,
+                glow::TEXTURE_WRAP_T,
+                glow::CLAMP_TO_EDGE as i32,
+            );
+        }
+
+        Ok(Self {
+            tex: new_tex,
+            config: config.clone(),
+        })
+    }
+
+    fn resize(&self, gl: &glow::Context, resolution: &[i32; 2]) {
+        unsafe {
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.tex));
+
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,
+                0,
+                self.config.format.to_sized_internal_format() as i32,
+                resolution[0],
+                resolution[1],
+                0,
+                self.config.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                self.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
+                None, // but we are passing in None here, so the above two values are ignored.
+            );
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -113,58 +173,10 @@ impl RenderPass {
         let (framebuffer, output_textures) =
             create_framebuffer_and_textures(gl, config, resolution)?;
 
-        // Generate some shader source to represent the bindings
-        let mut output_texture_shader_source = String::new();
-        for (slot_id, output_texture_slot) in config.output_texture_slots.iter().enumerate() {
-            output_texture_shader_source += &format!(
-                "layout(location={}) out vec{} {};\n",
-                slot_id,
-                output_texture_slot.format.to_channel_count(),
-                output_texture_slot.name
-            );
-        }
-
-        // Now we can figure out what input textures are configured.
-        // this is put both into a map for later reference and turned into some
-        // GLSL code that will auto-include them into our program
-        let mut input_texture_shader_source = String::new();
-        let mut input_textures = HashMap::new();
-        for input_texture_slot in config.input_texture_slots.iter() {
-            input_texture_shader_source +=
-                &format!("uniform sampler2D {};\n", input_texture_slot.name);
-            if input_textures
-                .insert(input_texture_slot.name.clone(), None)
-                .is_some()
-            {
-                return Err(RenderPassError::DuplicateInputSlotName(
-                    input_texture_slot.name.clone(),
-                ));
-            }
-        }
-
-        // Now we can assemble all the shader source into a single file and compile it
-        let shader_preamble = include_str!("./resources/renderpass_static.frag");
-
-        let mut fragment_source = String::new();
-        for shader_path in config.fragment_shader_paths.iter() {
-            let source = gamedata.shader_sources.get(shader_path).ok_or(
-                RenderPassError::MissingShaderSource(shader_path.to_string()),
-            )?;
-            fragment_source += source;
-        }
-        if fragment_source.len() == 0 {
-            Err(RenderPassError::NoShader)?;
-        }
-        let full_shader_code = String::new()
-            + shader_preamble
-            + &input_texture_shader_source
-            + &output_texture_shader_source
-            + &fragment_source;
-
         let mut shader_program = SimpleShader::new(
             gl,
             include_str!("./resources/shader.vert"),
-            &full_shader_code,
+            &generate_shader_text(config, gamedata)?,
         )
         .map_err(RenderPassError::ShaderError)?;
         shader_program.bind(gl);
@@ -173,51 +185,27 @@ impl RenderPass {
         // a hashmap lookup.
         let mut uniform_map = HashMap::new();
 
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iResolution".to_string(),
-        );
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iTime".to_string(),
-        );
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iTimeDelta".to_string(),
-        );
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iFrame".to_string(),
-        );
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iMouse".to_string(),
-        );
-        insert_uniform_if_exists(
-            gl,
-            &mut uniform_map,
-            &shader_program.program,
-            "iDate".to_string(),
-        );
+        let prog = &shader_program.program;
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iResolution".to_string());
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iTime".to_string());
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iTimeDelta".to_string());
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iFrame".to_string());
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iMouse".to_string());
+        insert_uniform_if_exists(gl, &mut uniform_map, prog, "iDate".to_string());
 
         // Make sure that our input textures are known
+        let mut input_textures = HashMap::new();
         for input_texture_slot in config.input_texture_slots.iter() {
-            insert_uniform_if_exists(
-                gl,
-                &mut uniform_map,
-                &shader_program.program,
-                input_texture_slot.name.clone(),
-            );
+            insert_uniform_if_exists(gl, &mut uniform_map, prog, input_texture_slot.name.clone());
+
+            if input_textures
+                .insert(input_texture_slot.name.clone(), None)
+                .is_some()
+            {
+                return Err(RenderPassError::DuplicateInputSlotName(
+                    input_texture_slot.name.clone(),
+                ));
+            }
         }
 
         Ok(Self {
@@ -230,136 +218,10 @@ impl RenderPass {
             output_textures,
             back_framebuffer: None,
             back_output_textures: None,
-            use_back_buffers: false,
             frame: 0,
             uniform_map,
         })
     }
-}
-
-fn insert_uniform_if_exists(
-    gl: &glow::Context,
-    uniform_map: &mut HashMap<String, glow::UniformLocation>,
-    program: &glow::Program,
-    uniform_name: String,
-) {
-    let uniform_location = unsafe { gl.get_uniform_location(*program, &uniform_name) };
-    if let Some(loc) = uniform_location {
-        uniform_map.insert(uniform_name, loc);
-    }
-}
-
-fn create_framebuffer_and_textures(
-    gl: &glow::Context,
-    config: &config_file::RenderPassConfig,
-    resolution: [i32; 2],
-) -> Result<(glow::Framebuffer, HashMap<String, OutputTexture>), RenderPassError> {
-    // Create the framebuffer
-    let framebuffer = unsafe {
-        gl.create_framebuffer()
-            .map_err(RenderPassError::CreateFramebufferFailed)?
-    };
-    // Set it up so we are operating on our framebuffer and have a texture unit to play with
-    unsafe {
-        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
-        gl.active_texture(glow::TEXTURE0);
-    }
-
-    let mut attachment_id = 0;
-    let mut buffers = vec![];
-
-    let mut output_textures = HashMap::new();
-
-    for output_texture_slot in config.output_texture_slots.iter() {
-        unsafe {
-            let new_tex = gl
-                .create_texture()
-                .map_err(RenderPassError::CreateTextureFailed)?;
-            if output_textures
-                .insert(
-                    output_texture_slot.name.clone(),
-                    OutputTexture {
-                        tex: new_tex,
-                        config: output_texture_slot.clone(),
-                    },
-                )
-                .is_some()
-            {
-                return Err(RenderPassError::DuplicateOutputSlotName(
-                    output_texture_slot.name.clone(),
-                ));
-            }
-
-            gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
-            //gl.pixel_storei(flow::UNPACK_FLIP_Y_WEBGL, 0);
-
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_MAG_FILTER,
-                glow::NEAREST as i32,
-            );
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_MIN_FILTER,
-                glow::NEAREST as i32,
-            );
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_S,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_T,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-
-            match config.resolution_scaling_mode {
-                config_file::ResolutionScalingMode::Fixed(_, _) => {
-                    // We know this isn't going to change, so we can use tex_storage_2d
-                    gl.tex_storage_2d(
-                        glow::TEXTURE_2D,
-                        1,
-                        output_texture_slot.format.to_sized_internal_format(),
-                        resolution[0],
-                        resolution[1],
-                    );
-                }
-                config_file::ResolutionScalingMode::ViewportScale(_, _) => {
-                    // For textures that can change size we use TexImage2d
-                    gl.tex_image_2d(
-                        glow::TEXTURE_2D,
-                        0,
-                        output_texture_slot.format.to_sized_internal_format() as i32,
-                        resolution[0],
-                        resolution[1],
-                        0,
-                        output_texture_slot.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
-                        output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
-                        None, // but we are passing in None here, so the above two values are ignored.
-                    );
-                }
-            }
-
-            let attachment = color_attachment_int_to_gl(attachment_id);
-            buffers.push(attachment);
-
-            gl.framebuffer_texture_2d(
-                glow::FRAMEBUFFER,
-                attachment,
-                glow::TEXTURE_2D,
-                Some(new_tex),
-                0,
-            );
-            attachment_id += 1;
-        }
-    }
-
-    unsafe {
-        gl.draw_buffers(&buffers);
-    }
-
-    Ok((framebuffer, output_textures))
 }
 
 impl node::Node for RenderPass {
@@ -374,13 +236,7 @@ impl node::Node for RenderPass {
         game_state: &super::GameState,
     ) {
         unsafe {
-            if self.back_framebuffer.is_some() {
-                // If we have a back framebuffer, switch it for next time.
-                self.use_back_buffers = !self.use_back_buffers;
-            }
-
-            if self.use_back_buffers {
-                assert!(self.back_framebuffer.is_some());
+            if self.back_framebuffer.is_some() && self.frame % 2 == 0 {
                 gl.bind_framebuffer(glow::FRAMEBUFFER, self.back_framebuffer);
             } else {
                 gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
@@ -419,12 +275,11 @@ impl node::Node for RenderPass {
 
             // Textures
             for (texture_id, (texture_name, texture)) in self.input_textures.iter().enumerate() {
-                let texture_unit_id = texture_id as u32;
-                gl.active_texture(glow::TEXTURE0 + texture_unit_id);
+                gl.active_texture(texture_unit_id_to_gl(texture_id as u32));
                 gl.bind_texture(glow::TEXTURE_2D, *texture);
                 // Tell WebGL which uniform refers to this texture unit
                 if let Some(loc) = self.uniform_map.get(texture_name) {
-                    gl.uniform_1_i32(Some(loc), texture_unit_id as i32);
+                    gl.uniform_1_i32(Some(loc), texture_id as i32);
                 } else {
                     panic!("No Uniform for input texture");
                 }
@@ -445,40 +300,14 @@ impl node::Node for RenderPass {
                 ];
 
                 // resize textures inside the buffer
-                unsafe {
-                    for (_texname, tex) in self.output_textures.iter() {
-                        gl.bind_texture(glow::TEXTURE_2D, Some(tex.tex));
+                for tex in self.output_textures.values() {
+                    tex.resize(gl, screen_resolution);
+                }
 
-                        gl.tex_image_2d(
-                            glow::TEXTURE_2D,
-                            0,
-                            tex.config.format.to_sized_internal_format() as i32,
-                            self.resolution[0],
-                            self.resolution[1],
-                            0,
-                            tex.config.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
-                            tex.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
-                            None, // but we are passing in None here, so the above two values are ignored.
-                        );
-                    }
-
-                    // if we are double-buffering, also resize our other-output-textures
-                    if let Some(output_textures) = &self.back_output_textures {
-                        for (_texname, tex) in output_textures.iter() {
-                            gl.bind_texture(glow::TEXTURE_2D, Some(tex.tex));
-
-                            gl.tex_image_2d(
-                                glow::TEXTURE_2D,
-                                0,
-                                tex.config.format.to_sized_internal_format() as i32,
-                                self.resolution[0],
-                                self.resolution[1],
-                                0,
-                                tex.config.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
-                                tex.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
-                                None, // but we are passing in None here, so the above two values are ignored.
-                            );
-                        }
+                // if we are double-buffering, also resize our other-output-textures
+                if let Some(output_textures) = &self.back_output_textures {
+                    for tex in output_textures.values() {
+                        tex.resize(gl, screen_resolution);
                     }
                 }
             }
@@ -486,11 +315,11 @@ impl node::Node for RenderPass {
     }
 
     fn get_output_texture(&self, name: &String) -> Result<glow::Texture, node::NodeError> {
-        if self.use_back_buffers {
+        if self.back_output_textures.is_some() && self.frame % 2 == 1 {
             // If we are rendering to the front textures this frame, return the back textures
             self.back_output_textures
                 .as_ref()
-                .expect("Trying to use backbuffers when they don't exist. Invalid state")
+                .unwrap()
                 .get(name)
                 .map(|x| x.tex)
                 .ok_or(node::NodeError::NoSuchOutputTexture(name.clone()))
@@ -522,29 +351,163 @@ impl node::Node for RenderPass {
         _: &String,
         _: &String,
     ) -> Result<(), node::NodeError> {
-        let (framebuffer, output_textures) =
-            create_framebuffer_and_textures(gl, &self.config, self.resolution)
-                .expect("Failed to create backbuffer");
+        // this function can be called multiple times if there are multiple self-references.
+        // so we need to guard against creating lots of back-buffers
+        if self.back_framebuffer.is_none() {
+            let (framebuffer, output_textures) =
+                create_framebuffer_and_textures(gl, &self.config, self.resolution)
+                    .expect("Failed to create backbuffer");
 
-        self.back_framebuffer = Some(framebuffer);
-        self.back_output_textures = Some(output_textures);
+            self.back_framebuffer = Some(framebuffer);
+            self.back_output_textures = Some(output_textures);
+        }
         Ok(())
     }
 }
 
-fn color_attachment_int_to_gl(int: u8) -> u32 {
-    match int {
-        0 => glow::COLOR_ATTACHMENT0 as u32,
-        1 => glow::COLOR_ATTACHMENT1 as u32,
-        2 => glow::COLOR_ATTACHMENT2 as u32,
-        3 => glow::COLOR_ATTACHMENT3 as u32,
-        4 => glow::COLOR_ATTACHMENT4 as u32,
-        5 => glow::COLOR_ATTACHMENT5 as u32,
-        6 => glow::COLOR_ATTACHMENT6 as u32,
-        7 => glow::COLOR_ATTACHMENT7 as u32,
-        8 => glow::COLOR_ATTACHMENT8 as u32,
-        9 => glow::COLOR_ATTACHMENT9 as u32,
-        10 => glow::COLOR_ATTACHMENT10 as u32,
-        _ => panic!("Too many color attachments!"),
+/// Attempts to fetch a uniform's location from a shader program and insert it into a hashmap
+/// Does nothing if the uniform does not exist.
+fn insert_uniform_if_exists(
+    gl: &glow::Context,
+    uniform_map: &mut HashMap<String, glow::UniformLocation>,
+    program: &glow::Program,
+    uniform_name: String,
+) {
+    let uniform_location = unsafe { gl.get_uniform_location(*program, &uniform_name) };
+    if let Some(loc) = uniform_location {
+        uniform_map.insert(uniform_name, loc);
     }
+}
+
+fn create_framebuffer_and_textures(
+    gl: &glow::Context,
+    config: &config_file::RenderPassConfig,
+    resolution: [i32; 2],
+) -> Result<(glow::Framebuffer, HashMap<String, OutputTexture>), RenderPassError> {
+    // Create the framebuffer
+    let framebuffer = unsafe {
+        gl.create_framebuffer()
+            .map_err(RenderPassError::CreateFramebufferFailed)?
+    };
+    // Set it up so we are operating on our framebuffer and have a texture unit to play with
+    unsafe {
+        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
+        gl.active_texture(glow::TEXTURE0);
+    }
+
+    let mut buffers = vec![];
+    let mut output_textures = HashMap::new();
+
+    for (attachment_id, output_texture_slot) in config.output_texture_slots.iter().enumerate() {
+        let output_tex = OutputTexture::new(gl, output_texture_slot)?;
+
+        let attachment = color_attachment_int_to_gl(attachment_id as u32);
+        buffers.push(attachment);
+
+        unsafe {
+            gl.bind_texture(glow::TEXTURE_2D, Some(output_tex.tex));
+            match config.resolution_scaling_mode {
+                config_file::ResolutionScalingMode::Fixed(_, _) => {
+                    // We know this isn't going to change, so we can use tex_storage_2d
+                    gl.tex_storage_2d(
+                        glow::TEXTURE_2D,
+                        1,
+                        output_texture_slot.format.to_sized_internal_format(),
+                        resolution[0],
+                        resolution[1],
+                    );
+                }
+                config_file::ResolutionScalingMode::ViewportScale(_, _) => {
+                    // For textures that can change size we use TexImage2d
+                    gl.tex_image_2d(
+                        glow::TEXTURE_2D,
+                        0,
+                        output_texture_slot.format.to_sized_internal_format() as i32,
+                        resolution[0],
+                        resolution[1],
+                        0,
+                        output_texture_slot.format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                        output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
+                        None, // but we are passing in None here, so the above two values are ignored.
+                    );
+                }
+            }
+
+            gl.framebuffer_texture_2d(
+                glow::FRAMEBUFFER,
+                attachment,
+                glow::TEXTURE_2D,
+                Some(output_tex.tex),
+                0,
+            );
+        }
+
+        if output_textures
+            .insert(output_tex.config.name.clone(), output_tex)
+            .is_some()
+        {
+            return Err(RenderPassError::DuplicateOutputSlotName(
+                output_texture_slot.name.clone(),
+            ));
+        }
+    }
+
+    unsafe {
+        gl.draw_buffers(&buffers);
+    }
+
+    Ok((framebuffer, output_textures))
+}
+
+/// Returns the code that is inserted before the users GLSL. This includes
+/// texture uniforms, the shader version etc.
+fn generate_shader_text(
+    config: &config_file::RenderPassConfig,
+    gamedata: &GameData,
+) -> Result<String, RenderPassError> {
+    let mut shader_text = String::new();
+
+    // Static things such as the shader version and "global" uniforms
+    shader_text += include_str!("./resources/renderpass_static.frag");
+
+    // Generate some shader source to represent the output textures
+    for (slot_id, output_texture_slot) in config.output_texture_slots.iter().enumerate() {
+        shader_text += &format!(
+            "layout(location={}) out vec{} {};\n",
+            slot_id,
+            output_texture_slot.format.to_channel_count(),
+            output_texture_slot.name
+        );
+    }
+
+    // Generate some shader source to represent the input textures
+    for input_texture_slot in config.input_texture_slots.iter() {
+        shader_text += &format!("uniform sampler2D {};\n", input_texture_slot.name);
+    }
+
+    let preamble_length = shader_text.len();
+    // Now we can assemble all the shader source into a single file and compile it
+    for shader_path in config.fragment_shader_paths.iter() {
+        let source = gamedata.shader_sources.get(shader_path).ok_or(
+            RenderPassError::MissingShaderSource(shader_path.to_string()),
+        )?;
+        shader_text += source;
+    }
+    // Nothing was added to the shader when reading from disk, so there is no
+    // actual rendering going to be performed here.
+    if shader_text.len() == preamble_length {
+        Err(RenderPassError::NoShader)?;
+    }
+
+    Ok(shader_text)
+}
+
+fn color_attachment_int_to_gl(int: u32) -> u32 {
+    assert!(int <= 10);
+    glow::COLOR_ATTACHMENT0 + int
+}
+
+fn texture_unit_id_to_gl(int: u32) -> u32 {
+    assert!(int <= 32);
+    glow::TEXTURE0 + int
 }
