@@ -102,8 +102,47 @@ impl RenderPass {
         gamedata: &GameData,
         config: &config_file::RenderPassConfig,
     ) -> Result<Self, RenderPassError> {
-        // Load and compile the shader
+        // First we create the framebuffer and output textures that this shader
+        // will render into.
+        let resolution = match config.resolution_scaling_mode {
+            config_file::ResolutionScalingMode::Fixed(width, height) => [width, height],
+            config_file::ResolutionScalingMode::ViewportScale(x_percent, y_percent) => {
+                [(1920.0 * x_percent) as i32, (1080.0 * y_percent) as i32]
+            }
+        };
+        let (framebuffer, output_textures) =
+            create_framebuffer_and_textures(gl, config, resolution)?;
 
+        // Generate some shader source to represent the bindings
+        let mut output_texture_shader_source = String::new();
+        for (slot_id, output_texture_slot) in config.output_texture_slots.iter().enumerate() {
+            output_texture_shader_source += &format!(
+                "layout(location={}) out vec{} {};\n",
+                slot_id,
+                output_texture_slot.format.to_channel_count(),
+                output_texture_slot.name
+            );
+        }
+
+        // Now we can figure out what input textures are configured.
+        // this is put both into a map for later reference and turned into some
+        // GLSL code that will auto-include them into our program
+        let mut input_texture_shader_source = String::new();
+        let mut input_textures = HashMap::new();
+        for input_texture_slot in config.input_texture_slots.iter() {
+            input_texture_shader_source +=
+                &format!("uniform sampler2D {};\n", input_texture_slot.name);
+            if input_textures
+                .insert(input_texture_slot.name.clone(), None)
+                .is_some()
+            {
+                return Err(RenderPassError::DuplicateInputSlotName(
+                    input_texture_slot.name.clone(),
+                ));
+            }
+        }
+
+        // Now we can assemble all the shader source into a single file and compile it
         let shader_preamble = include_str!("./resources/renderpass_static.frag");
 
         let mut fragment_source = String::new();
@@ -116,8 +155,11 @@ impl RenderPass {
         if fragment_source.len() == 0 {
             Err(RenderPassError::NoShader)?;
         }
-
-        let full_shader_code = String::new() + shader_preamble + &fragment_source;
+        let full_shader_code = String::new()
+            + shader_preamble
+            + &input_texture_shader_source
+            + &output_texture_shader_source
+            + &fragment_source;
 
         let mut shader_program = SimpleShader::new(
             gl,
@@ -127,28 +169,8 @@ impl RenderPass {
         .map_err(RenderPassError::ShaderError)?;
         shader_program.bind(gl);
 
-        let resolution = match config.resolution_scaling_mode {
-            config_file::ResolutionScalingMode::Fixed(width, height) => [width, height],
-            config_file::ResolutionScalingMode::ViewportScale(x_percent, y_percent) => {
-                [(1920.0 * x_percent) as i32, (1080.0 * y_percent) as i32]
-            }
-        };
-
-        let (framebuffer, output_textures) =
-            create_framebuffer_and_textures(gl, config, resolution)?;
-
-        let mut input_textures = HashMap::new();
-        for input_texture_slot in config.input_texture_slots.iter() {
-            if input_textures
-                .insert(input_texture_slot.name.clone(), None)
-                .is_some()
-            {
-                return Err(RenderPassError::DuplicateInputSlotName(
-                    input_texture_slot.name.clone(),
-                ));
-            }
-        }
-
+        // If we know what uniforms exist in advance we can replace lots of GL calls with
+        // a hashmap lookup.
         let mut uniform_map = HashMap::new();
 
         insert_uniform_if_exists(
@@ -335,7 +357,12 @@ impl node::Node for RenderPass {
         &self.name
     }
 
-    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad) {
+    fn bind(
+        &mut self,
+        gl: &glow::Context,
+        quad: &super::quad::Quad,
+        game_state: &super::GameState,
+    ) {
         unsafe {
             if self.back_framebuffer.is_some() {
                 // If we have a back framebuffer, switch it for next time.
@@ -363,6 +390,21 @@ impl node::Node for RenderPass {
             }
             if let Some(loc) = self.uniform_map.get("iFrame") {
                 gl.uniform_1_u32(Some(&loc), self.frame);
+            }
+            if let Some(loc) = self.uniform_map.get("iTimeDelta") {
+                gl.uniform_1_f32(Some(&loc), game_state.time_delta as f32);
+            }
+            if let Some(loc) = self.uniform_map.get("iTime") {
+                gl.uniform_1_f32(Some(&loc), game_state.time_since_start as f32);
+            }
+            if let Some(loc) = self.uniform_map.get("iDate") {
+                gl.uniform_4_f32(
+                    Some(&loc),
+                    game_state.date[0] as f32,
+                    game_state.date[1] as f32,
+                    game_state.date[2] as f32,
+                    game_state.date[3] as f32,
+                );
             }
 
             quad.bind(gl, self.shader_program.attrib_vertex_positions);

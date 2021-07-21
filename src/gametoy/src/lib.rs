@@ -1,3 +1,4 @@
+use chrono::{Datelike, Timelike};
 pub use glow;
 use glow::HasContext;
 use std::cell::RefCell;
@@ -39,13 +40,24 @@ struct Link {
     end_input_slot: String,
 }
 
+pub struct GameState {
+    // Time since the program began
+    time_since_start: f64,
+
+    // Time it took to render the previous frame
+    time_delta: f64,
+
+    // Date as year, month, day, time-in-seconds
+    date: [u32; 4],
+}
+
 pub struct GameToy {
     gl: glow::Context,
 
+    game_state: GameState,
+
     // Time the last frame was rendered - used to calculate dt
     prev_render_time: f64,
-    // Monotonic non-decreasing clock
-    time_since_start: f64,
 
     // Everything is rendered on the same quad, so lets just chuck that here
     quad: quad::Quad,
@@ -137,7 +149,11 @@ impl GameToy {
         Ok(Self {
             gl,
             prev_render_time: 0.0,
-            time_since_start: 0.0,
+            game_state: GameState {
+                time_since_start: 0.0,
+                time_delta: 0.0,
+                date: [0, 0, 0, 0],
+            },
             quad,
             nodes,
             links,
@@ -158,7 +174,17 @@ impl GameToy {
         };
 
         self.prev_render_time = time_since_unix_epoch;
-        self.time_since_start += dt;
+        self.game_state.time_since_start += dt;
+        self.game_state.time_delta = dt;
+
+        let secs = time_since_unix_epoch.floor() as i64;
+        let datetime = chrono::NaiveDateTime::from_timestamp(secs, 0);
+        self.game_state.date = [
+            datetime.year() as u32,
+            datetime.month(),
+            datetime.day(),
+            datetime.num_seconds_from_midnight(),
+        ];
 
         unsafe {
             // Render all of the various passes
@@ -204,7 +230,7 @@ impl GameToy {
                             GameToyError::BindInputTextureFailed(node_mut.get_name().clone(), e)
                         })?;
                 }
-                node_mut.bind(&self.gl, &self.quad);
+                node_mut.bind(&self.gl, &self.quad, &self.game_state);
 
                 self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
             }

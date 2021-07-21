@@ -58,7 +58,12 @@ impl node::Node for OutputNode {
         self.resolution = screen_resolution.clone();
     }
 
-    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad) {
+    fn bind(
+        &mut self,
+        gl: &glow::Context,
+        quad: &super::quad::Quad,
+        _game_state: &super::GameState,
+    ) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, None); // Bind to the viewport - a framebuffer of None
             gl.viewport(0, 0, self.resolution[0], self.resolution[1]);

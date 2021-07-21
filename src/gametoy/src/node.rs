@@ -12,7 +12,7 @@ pub trait Node {
 
     /// Sets up this node for rendering. A following call with a quad should render this
     /// node
-    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad);
+    fn bind(&mut self, gl: &glow::Context, quad: &super::quad::Quad, game_state: &super::GameState);
 
     /// Run when the screen resolution has changed. This indicates that the node may
     /// need to update it's resolution as well.
