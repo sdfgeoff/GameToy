@@ -21,7 +21,7 @@ pub use gamestate::GameState;
 pub enum GameToyError {
     DataLoadError(gamedata::GameDataError),
     QuadCreateError(quad::QuadError),
-    RenderPassCreateError(String, nodes::RenderPassError),
+    NodeCreateError(String, nodes::NodeError),
     DuplicateNodeName(String),
     NoSuchNodeName(String),
     GetInputTextureFailed(String, nodes::NodeError),
@@ -76,7 +76,7 @@ impl GameToy {
                     let new_pass =
                         nodes::RenderPass::create_from_config(&gl, &game_data, pass_config)
                             .map_err(|e| {
-                                GameToyError::RenderPassCreateError(pass_config.name.clone(), e)
+                                GameToyError::NodeCreateError(pass_config.name.clone(), e)
                             })?;
                     Rc::new(RefCell::new(Box::new(new_pass)))
                 }
@@ -86,6 +86,12 @@ impl GameToy {
                 config_file::Node::Output(output_config) => {
                     let output = nodes::Output::create_from_config(&gl, output_config);
                     Rc::new(RefCell::new(Box::new(output)))
+                }
+                config_file::Node::Keyboard(key_config) => {
+                    let keys = nodes::Keyboard::create_from_config(&gl, key_config).map_err(|e| {
+                        GameToyError::NodeCreateError(key_config.name.clone(), e)
+                    })?;
+                    Rc::new(RefCell::new(Box::new(keys)))
                 }
             };
             if links
@@ -201,6 +207,10 @@ impl GameToy {
                 self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
             }
         }
+
+        self.game_state.clear_keys_dirty();
+        self.game_state.update_key_tick();
+
         Ok(())
     }
 
@@ -214,8 +224,11 @@ impl GameToy {
         }
     }
 
-    pub fn set_key_state(&mut self, key_scancode: u32, key_down: bool) {
-        println!("{:?} is currenlty down? {}", key_scancode, key_down);
+    /// Used for keyboard input into GameToy. 
+    /// Note that the keycode should be equivalent to the Javascript one for
+    /// compatibility
+    pub fn set_key_state(&mut self, key_code: u32, key_down: bool) {
+        self.game_state.set_key_state(key_code as usize, key_down);
     }
 
     /*

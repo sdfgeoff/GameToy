@@ -2,8 +2,35 @@ use glow::Texture;
 
 #[derive(Debug)]
 pub enum NodeError {
+    /// This node does not contain an input texture with the supplied name.
+    /// String is the name of the texture requested
     NoSuchInputTexture(String),
+
+    /// This node does not contain an output texture with the supplied name
+    /// String is the name of the texture requested
     NoSuchOutputTexture(String),
+
+    /// The GPU failed to allocate a framebuffer
+    CreateFramebufferFailed(String),
+
+    /// The GPU failed to allocate a texture
+    CreateTextureFailed(String),
+
+    /// The text files that should contain the shader source code
+    /// do not exist in the supplied GameData
+    MissingShaderSource(String),
+
+    /// This renderpass has two input slots with the same name
+    DuplicateInputSlotName(String),
+
+    /// This renderpass has two output slots with the same name
+    DuplicateOutputSlotName(String),
+
+    /// There is no shader defined for this renderpass!
+    NoShader,
+
+    /// Shader failed to compile/link etc.
+    ShaderError(crate::shader::ShaderError),
 }
 
 pub trait Node {

@@ -73,6 +73,8 @@ pub enum Node {
     RenderPass(RenderPassConfig),
 
     Output(OutputConfig),
+
+    Keyboard(KeyboardConfig),
 }
 
 /// A node containing a static texture
@@ -86,6 +88,13 @@ pub struct TextureConfig {
 /// The node that actually writes to the screen
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OutputConfig {
+    pub name: String
+}
+
+/// A texture that contains the state of the keyboard.
+/// The texture is 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct KeyboardConfig {
     pub name: String
 }
 

@@ -19,6 +19,7 @@ use crate::config_file;
 use crate::gamedata::GameData;
 use crate::GameState;
 use super::node;
+use super::NodeError;
 use crate::shader::{ShaderError, SimpleShader};
 use crate::quad::Quad;
 use glow::HasContext;
@@ -76,10 +77,10 @@ impl OutputTexture {
     fn new(
         gl: &glow::Context,
         config: &config_file::OutputBufferConfig,
-    ) -> Result<Self, RenderPassError> {
+    ) -> Result<Self, NodeError> {
         let new_tex = unsafe {
             gl.create_texture()
-                .map_err(RenderPassError::CreateTextureFailed)?
+                .map_err(NodeError::CreateTextureFailed)?
         };
 
         unsafe {
@@ -133,37 +134,12 @@ impl OutputTexture {
     }
 }
 
-#[derive(Debug)]
-pub enum RenderPassError {
-    /// The GPU failed to allocate the framebuffer
-    CreateFramebufferFailed(String),
-
-    /// The GPU failed to allocate a texture
-    CreateTextureFailed(String),
-
-    /// The text files that should contain the shader source code
-    /// do not exist in the supplied GameData
-    MissingShaderSource(String),
-
-    /// This renderpass has two input slots with the same name
-    DuplicateInputSlotName(String),
-
-    /// This renderpass has two output slots with the same name
-    DuplicateOutputSlotName(String),
-
-    /// There is no shader defined for this renderpass!
-    NoShader,
-
-    /// Shader failed to compile/link etc.
-    ShaderError(ShaderError),
-}
-
 impl RenderPass {
     pub fn create_from_config(
         gl: &glow::Context,
         gamedata: &GameData,
         config: &config_file::RenderPassConfig,
-    ) -> Result<Self, RenderPassError> {
+    ) -> Result<Self, NodeError> {
         // First we create the framebuffer and output textures that this shader
         // will render into.
         let resolution = match config.resolution_scaling_mode {
@@ -180,7 +156,7 @@ impl RenderPass {
             include_str!("../resources/shader.vert"),
             &generate_shader_text(config, gamedata)?,
         )
-        .map_err(RenderPassError::ShaderError)?;
+        .map_err(NodeError::ShaderError)?;
         shader_program.bind(gl);
 
         // If we know what uniforms exist in advance we can replace lots of GL calls with
@@ -204,7 +180,7 @@ impl RenderPass {
                 .insert(input_texture_slot.name.clone(), None)
                 .is_some()
             {
-                return Err(RenderPassError::DuplicateInputSlotName(
+                return Err(NodeError::DuplicateInputSlotName(
                     input_texture_slot.name.clone(),
                 ));
             }
@@ -385,11 +361,11 @@ fn create_framebuffer_and_textures(
     gl: &glow::Context,
     config: &config_file::RenderPassConfig,
     resolution: [i32; 2],
-) -> Result<(glow::Framebuffer, HashMap<String, OutputTexture>), RenderPassError> {
+) -> Result<(glow::Framebuffer, HashMap<String, OutputTexture>), NodeError> {
     // Create the framebuffer
     let framebuffer = unsafe {
         gl.create_framebuffer()
-            .map_err(RenderPassError::CreateFramebufferFailed)?
+            .map_err(NodeError::CreateFramebufferFailed)?
     };
     // Set it up so we are operating on our framebuffer and have a texture unit to play with
     unsafe {
@@ -448,7 +424,7 @@ fn create_framebuffer_and_textures(
             .insert(output_tex.config.name.clone(), output_tex)
             .is_some()
         {
-            return Err(RenderPassError::DuplicateOutputSlotName(
+            return Err(NodeError::DuplicateOutputSlotName(
                 output_texture_slot.name.clone(),
             ));
         }
@@ -466,7 +442,7 @@ fn create_framebuffer_and_textures(
 fn generate_shader_text(
     config: &config_file::RenderPassConfig,
     gamedata: &GameData,
-) -> Result<String, RenderPassError> {
+) -> Result<String, NodeError> {
     let mut shader_text = String::new();
 
     // Static things such as the shader version and "global" uniforms
@@ -491,14 +467,14 @@ fn generate_shader_text(
     // Now we can assemble all the shader source into a single file and compile it
     for shader_path in config.fragment_shader_paths.iter() {
         let source = gamedata.shader_sources.get(shader_path).ok_or(
-            RenderPassError::MissingShaderSource(shader_path.to_string()),
+            NodeError::MissingShaderSource(shader_path.to_string()),
         )?;
         shader_text += source;
     }
     // Nothing was added to the shader when reading from disk, so there is no
     // actual rendering going to be performed here.
     if shader_text.len() == preamble_length {
-        Err(RenderPassError::NoShader)?;
+        Err(NodeError::NoShader)?;
     }
 
     Ok(shader_text)
