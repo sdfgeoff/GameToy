@@ -1,7 +1,7 @@
 use js_sys::Date;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::HtmlCanvasElement;
+use web_sys::{HtmlCanvasElement, KeyboardEvent};
 
 use gametoy;
 use gametoy::glow;
@@ -75,5 +75,13 @@ impl App {
 
         let time = Date::new_0().get_time() / 1000.0;
         self.toy.render(time).expect("Failed to render toy");
+    }
+
+    pub fn keydown_event(&mut self, event: KeyboardEvent) {
+        self.toy.set_key_state(event.which(), true);
+
+    }
+    pub fn keyup_event(&mut self, event: KeyboardEvent) {
+        self.toy.set_key_state(event.which(), false);
     }
 }

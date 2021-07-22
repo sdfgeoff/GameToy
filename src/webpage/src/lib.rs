@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, Closure};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    window, Event, HtmlCanvasElement, KeyEvent, MouseEvent, Request, RequestInit, RequestMode,
+    window, Event, HtmlCanvasElement, KeyboardEvent, MouseEvent, Request, RequestInit, RequestMode,
     Response,
 };
 
@@ -111,6 +111,43 @@ impl Core {
             window
                 .request_animation_frame(make_callback(callback.borrow().as_ref().unwrap()))
                 .unwrap();
+        }
+
+        {
+            // keyboard events
+            self.canvas.set_tab_index(1); // Canvas elements ignore key events unless they have a tab index
+            let anim_app1 = self.app.clone();
+            let anim_app2 = self.app.clone();
+
+            let keydown_callback = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+                let e: Event = event.clone().dyn_into().unwrap();
+                e.stop_propagation();
+                e.prevent_default();
+
+                anim_app1.borrow_mut().keydown_event(event);
+            }) as Box<dyn FnMut(_)>);
+
+            let keyup_callback = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+                let e: Event = event.clone().dyn_into().unwrap();
+                e.stop_propagation();
+                e.prevent_default();
+
+                anim_app2.borrow_mut().keyup_event(event);
+            }) as Box<dyn FnMut(_)>);
+
+            self.canvas
+                .add_event_listener_with_callback(
+                    "keydown",
+                    keydown_callback.as_ref().unchecked_ref(),
+                )
+                .unwrap();
+
+            self.canvas
+                .add_event_listener_with_callback("keyup", keyup_callback.as_ref().unchecked_ref())
+                .unwrap();
+
+            keydown_callback.forget();
+            keyup_callback.forget();
         }
     }
 }

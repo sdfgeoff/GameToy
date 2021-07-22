@@ -214,6 +214,10 @@ impl GameToy {
         }
     }
 
+    pub fn set_key_state(&mut self, key_scancode: u32, key_down: bool) {
+        println!("{:?} is currenlty down? {}", key_scancode, key_down);
+    }
+
     /*
     fn destroy() {
 

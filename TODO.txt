@@ -1,11 +1,12 @@
 ////////////////////////// Feature Requests ///////////////////////////
 
 APPROVED:
-[ ] Static Texture Nodes
-[ ] Mouse Input Uniform
 [ ] Input Texture Keyboard
+[ ] Mouse Input Uniform
+[ ] Static Texture Nodes
 [ ] Channel resolution uniforms
 [ ] Create user documentation
+[ ] Add FragCoord (0-iResolution) in addition to existing FragCoordUV
 
 DECISION NEEDED:
 [ ] FragCoordUV (0-1) vs FragCoord (0-iResolution)
@@ -30,6 +31,9 @@ META:
 
 
 //////////////////////////// Changelog ////////////////////////////////
+
+2021-07-22
+[x] Keypresses routed into gametoy for web and desktop
 
 2021-07-21
 [x] Better System for demo programs to aid development (eg. pass in path to pack file)
