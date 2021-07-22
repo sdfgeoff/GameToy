@@ -1,4 +1,3 @@
-use chrono::{Datelike, Timelike};
 pub use glow;
 use glow::HasContext;
 use std::cell::RefCell;
@@ -10,28 +9,30 @@ pub use tar;
 
 mod config_file;
 mod gamedata;
-mod node;
-mod output_node;
+mod nodes;
 mod quad;
-mod renderpass;
 mod shader;
+
+mod gamestate;
+
+pub use gamestate::GameState;
 
 #[derive(Debug)]
 pub enum GameToyError {
     DataLoadError(gamedata::GameDataError),
     QuadCreateError(quad::QuadError),
-    RenderPassCreateError(String, renderpass::RenderPassError),
+    RenderPassCreateError(String, nodes::RenderPassError),
     DuplicateNodeName(String),
     NoSuchNodeName(String),
-    GetInputTextureFailed(String, node::NodeError),
-    BindInputTextureFailed(String, node::NodeError),
-    SelfReferenceSetupFailed(String, node::NodeError),
+    GetInputTextureFailed(String, nodes::NodeError),
+    BindInputTextureFailed(String, nodes::NodeError),
+    SelfReferenceSetupFailed(String, nodes::NodeError),
 
     /// Raised whenever the internal mapping of node->links does not have an entry for a specific node.
     InvalidLinkVec(),
 }
 
-type NodeRef = Rc<RefCell<Box<dyn node::Node>>>;
+type NodeRef = Rc<RefCell<Box<dyn nodes::Node>>>;
 
 struct Link {
     start_node: NodeRef,
@@ -40,24 +41,12 @@ struct Link {
     end_input_slot: String,
 }
 
-pub struct GameState {
-    // Time since the program began
-    time_since_start: f64,
-
-    // Time it took to render the previous frame
-    time_delta: f64,
-
-    // Date as year, month, day, time-in-seconds
-    date: [u32; 4],
-}
 
 pub struct GameToy {
     gl: glow::Context,
 
     game_state: GameState,
 
-    // Time the last frame was rendered - used to calculate dt
-    prev_render_time: f64,
 
     // Everything is rendered on the same quad, so lets just chuck that here
     quad: quad::Quad,
@@ -85,7 +74,7 @@ impl GameToy {
             let new_node: NodeRef = match node {
                 config_file::Node::RenderPass(pass_config) => {
                     let new_pass =
-                        renderpass::RenderPass::create_from_config(&gl, &game_data, pass_config)
+                        nodes::RenderPass::create_from_config(&gl, &game_data, pass_config)
                             .map_err(|e| {
                                 GameToyError::RenderPassCreateError(pass_config.name.clone(), e)
                             })?;
@@ -95,7 +84,7 @@ impl GameToy {
                     unimplemented!()
                 }
                 config_file::Node::Output(output_config) => {
-                    let output = output_node::OutputNode::create_from_config(&gl, output_config);
+                    let output = nodes::Output::create_from_config(&gl, output_config);
                     Rc::new(RefCell::new(Box::new(output)))
                 }
             };
@@ -148,12 +137,7 @@ impl GameToy {
 
         Ok(Self {
             gl,
-            prev_render_time: 0.0,
-            game_state: GameState {
-                time_since_start: 0.0,
-                time_delta: 0.0,
-                date: [0, 0, 0, 0],
-            },
+            game_state: GameState::new(),
             quad,
             nodes,
             links,
@@ -166,25 +150,7 @@ impl GameToy {
     // if you pass this in as zero, the simulation will assume a frametime of
     // 60FPS.
     pub fn render(&mut self, time_since_unix_epoch: f64) -> Result<(), GameToyError> {
-        let dt = if self.prev_render_time == 0.0 {
-            0.016
-        } else {
-            // Cap the dt at 0.0 - time should not move backwards
-            f64::max(time_since_unix_epoch - self.prev_render_time, 0.0)
-        };
-
-        self.prev_render_time = time_since_unix_epoch;
-        self.game_state.time_since_start += dt;
-        self.game_state.time_delta = dt;
-
-        let secs = time_since_unix_epoch.floor() as i64;
-        let datetime = chrono::NaiveDateTime::from_timestamp(secs, 0);
-        self.game_state.date = [
-            datetime.year() as u32,
-            datetime.month(),
-            datetime.day(),
-            datetime.num_seconds_from_midnight(),
-        ];
+        self.game_state.update_times(time_since_unix_epoch);
 
         unsafe {
             // Render all of the various passes

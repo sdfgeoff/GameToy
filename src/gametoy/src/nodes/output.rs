@@ -9,14 +9,16 @@ This buffer is always at the resolution of the users display.
 
 !*/
 
-use super::config_file;
+use crate::config_file;
 use super::node;
-use super::shader;
+use crate::shader;
+use crate::quad::Quad;
+use crate::GameState;
 
 use glow::HasContext;
 
 /// The output node writes to the screen!
-pub struct OutputNode {
+pub struct Output {
     pub name: String,
     pub resolution: [i32; 2],
 
@@ -27,12 +29,12 @@ pub struct OutputNode {
     pub output_texture: Option<glow::Texture>,
 }
 
-impl OutputNode {
+impl Output {
     pub fn create_from_config(gl: &glow::Context, config: &config_file::OutputConfig) -> Self {
         let shader_program = shader::SimpleShader::new(
             &gl,
-            include_str!("resources/shader.vert"),
-            include_str!("resources/output_node.frag"),
+            include_str!("../resources/shader.vert"),
+            include_str!("../resources/output_node.frag"),
         )
         .expect("Failed to create output shader");
 
@@ -49,7 +51,7 @@ impl OutputNode {
     }
 }
 
-impl node::Node for OutputNode {
+impl node::Node for Output {
     fn get_name(&self) -> &String {
         return &self.name;
     }
@@ -61,8 +63,8 @@ impl node::Node for OutputNode {
     fn bind(
         &mut self,
         gl: &glow::Context,
-        quad: &super::quad::Quad,
-        _game_state: &super::GameState,
+        quad: &Quad,
+        _game_state: &GameState,
     ) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, None); // Bind to the viewport - a framebuffer of None

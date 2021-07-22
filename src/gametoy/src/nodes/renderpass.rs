@@ -15,10 +15,12 @@ TODOs:
 
 !*/
 
-use super::config_file;
-use super::gamedata::GameData;
+use crate::config_file;
+use crate::gamedata::GameData;
+use crate::GameState;
 use super::node;
-use super::shader::{ShaderError, SimpleShader};
+use crate::shader::{ShaderError, SimpleShader};
+use crate::quad::Quad;
 use glow::HasContext;
 
 use std::collections::HashMap;
@@ -175,7 +177,7 @@ impl RenderPass {
 
         let mut shader_program = SimpleShader::new(
             gl,
-            include_str!("./resources/shader.vert"),
+            include_str!("../resources/shader.vert"),
             &generate_shader_text(config, gamedata)?,
         )
         .map_err(RenderPassError::ShaderError)?;
@@ -232,8 +234,8 @@ impl node::Node for RenderPass {
     fn bind(
         &mut self,
         gl: &glow::Context,
-        quad: &super::quad::Quad,
-        game_state: &super::GameState,
+        quad: &Quad,
+        game_state: &GameState,
     ) {
         unsafe {
             if self.back_framebuffer.is_some() && self.frame % 2 == 0 {
@@ -468,7 +470,7 @@ fn generate_shader_text(
     let mut shader_text = String::new();
 
     // Static things such as the shader version and "global" uniforms
-    shader_text += include_str!("./resources/renderpass_static.frag");
+    shader_text += include_str!("../resources/renderpass_static.frag");
 
     // Generate some shader source to represent the output textures
     for (slot_id, output_texture_slot) in config.output_texture_slots.iter().enumerate() {

@@ -1,32 +1,54 @@
-Program Features
+////////////////////////// Feature Requests ///////////////////////////
 
-[x] Single Shader
-[x] Read from tar file
-[x] Framebuffer (multiple shaders)
-[x] Read from config file
-[x] Framebuffer supports configuring pixel format
-[x] Framebuffer supports setting resolution + scaling mode
-[x] Link between shaders based on config file
-[x] Double buffering to allow a renderpass to read from itself
-[x] Auto-generate uniforms (eg for input channels + input channel resolution)
-[x] shader version pragma auto-inserted
-[x] Supports shadertoy default uniforms (Except mouse+channel resolution)
-
-[ ] Static Texture loading
-[ ] Keyboard Texture
-[ ] Mouse Input
+APPROVED:
+[ ] Static Texture Nodes
+[ ] Mouse Input Uniform
+[ ] Input Texture Keyboard
 [ ] Channel resolution uniforms
-[ ] Detects if inputs "dirty" before rendering
+[ ] Create user documentation
 
-Possible Features:
+DECISION NEEDED:
+[ ] FragCoordUV (0-1) vs FragCoord (0-iResolution)
+
+PENDING:
+[ ] Detects if inputs "dirty" before rendering a renderlayer
+[ ] Configure Texture filtering modes for renderlayer output textures.
 [ ] Graph Editor
-[ ] Reload TAR file without restarting?
 [ ] Proper shutdown sequence?
+[ ] Reload TAR file without restarting?
+[ ] Output node that controls game state (pause, play, quit, fullscreen, save, load etc.)
+[ ] Output node that controls sounds (somehow?)
 
-
-Meta:
-[ ] Upload to GIT
-[ ] Strip the binary to reduce filesize
-[ ] Better System for demo programs (eg. pass in path to pack file on desktop)
+META:
+[ ] Upload to github?
+[ ] Strip the binary to reduce filesize in build system?
 [ ] Build on CI (arrgh! No!!!)
 [ ] Build/Test on Windows
+
+
+/////////////////////////// Known Issues //////////////////////////////
+
+
+//////////////////////////// Changelog ////////////////////////////////
+
+2021-07-21
+[x] Better System for demo programs to aid development (eg. pass in path to pack file)
+[x] Supports shadertoy default uniforms (Except mouse+channel resolution)
+[x] shader version pragma auto-inserted
+[x] Auto-generate uniforms (eg for input channels + input channel resolution)
+
+2021-07-20
+[x] Double buffering to allow a renderpass to read from itself
+
+2021-07-19
+[x] Link between shaders based on config file
+
+2021-07-11
+[x] Framebuffer supports setting resolution + scaling mode
+[x] Framebuffer supports configuring pixel format
+[x] Read from config file
+[x] Framebuffer (multiple shaders)
+[x] Read from tar file on web
+[x] Read from tar file on desktop
+[x] Single shader on web
+[x] Single Shader on desktop
