@@ -39,8 +39,8 @@ vec4 gen_map(vec2 fragCoord, vec4 map_settings) {
 
 void main()
 {
-    ivec2 addr = ivec2(FragCoordUV * iResolution.xy);
-    vec2 fragCoord = FragCoordUV * iResolution.xy;
+    ivec2 addr = ivec2(fragCoordUV * iResolution.xy);
+    vec2 fragCoord = fragCoordUV * iResolution.xy;
     
     vec4 map = texelFetch(BUFFER_MAP_STATE, addr, 0);
     
@@ -60,7 +60,7 @@ void main()
         vec2 delta;
         ivec2 player_co = map_coord_to_texel(player_position.xy, delta);
         
-        vec2 blast_vec = vec2(player_co - addr) + (1.0 - delta);
+        vec2 blast_vec = vec2(player_co - addr) + (delta);
         float r2 = dot(blast_vec, blast_vec);
         
         

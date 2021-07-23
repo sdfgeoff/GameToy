@@ -103,11 +103,11 @@ float draw_key(int key, float arrow) {
 
 
 void main() {
-	col.r = texture(keyboard, FragCoordUV).r;
+	col.r = texture(keyboard, fragCoordUV).r;
 
 	vec3 edge_vec = vec3(0.0, INNER_SPACING, OUTER_SPACING);
 
-	vec2 uv = FragCoordUV * 2.0 - 1.0;
+	vec2 uv = fragCoordUV * 2.0 - 1.0;
 	uv.x *= iResolution.x / iResolution.y;
 
 	float up_arrow = sdArrow(uv, edge_vec.xy, edge_vec.xz, ARROW_WIDTH, HEAD_WIDTH);

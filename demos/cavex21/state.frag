@@ -15,7 +15,7 @@ float get_key_tap(int key_code) {
 
 void main()
 {
-    ivec2 addr = ivec2(FragCoordUV * iResolution.xy);
+    ivec2 addr = ivec2(fragCoordUV * iResolution.xy);
     
     if (addr == ADDR_RESET) {
         //vec2 prev_resolution = read_data(BUFFER_STATE, ADDR_RESET).gb;

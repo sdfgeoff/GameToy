@@ -69,6 +69,7 @@ const ivec2 ADDR_PLAYER_STATE = ivec2(0,3);
 
 
 
+
 // Fetch a single pixel from the state buffer buffer
 vec4 read_data(sampler2D buffer, ivec2 address){
     return texelFetch(buffer, address, 0);
@@ -112,7 +113,7 @@ void unpack_player(in vec4 data, out vec3 position, out vec3 velocity, out float
 
 vec4 sample_map_raw(sampler2D map_buffer, ivec2 coord) {
     bvec4 bounds = bvec4(
-        greaterThan(coord, MAP_SIZE),
+        greaterThan(coord, MAP_SIZE-1),
         lessThan(coord, ivec2(0))
     );
     

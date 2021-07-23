@@ -42,7 +42,7 @@ void main()
     //secs += mils;
 
 	//vec2 uv = (2.0*fragCoord.xy-iResolution.xy)/min(iResolution.y,iResolution.x);
-        vec2 uv = FragCoordUV * 2.0 - 1.0;
+        vec2 uv = fragCoordUV * 2.0 - 1.0;
         uv.x *= iResolution.x / iResolution.y;
 
 	float r = length( uv );

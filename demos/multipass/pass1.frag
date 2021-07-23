@@ -317,5 +317,5 @@ void main() {
         text_string[64+14] = int_to_char(int(iDate.z) % 10);
         
         
-        col = vec4(draw_text(FragCoordUV, text_string, text_box_chars));
+        col = vec4(draw_text(fragCoordUV, text_string, text_box_chars));
 }

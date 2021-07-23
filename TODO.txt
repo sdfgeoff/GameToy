@@ -1,7 +1,6 @@
 ////////////////////////// Feature Requests ///////////////////////////
 
 APPROVED:
-[ ] Input Texture Keyboard
 [ ] Mouse Input Uniform
 [ ] Static Texture Nodes
 [ ] Channel resolution uniforms
@@ -9,7 +8,7 @@ APPROVED:
 [ ] Add FragCoord (0-iResolution) in addition to existing FragCoordUV
 
 DECISION NEEDED:
-[ ] FragCoordUV (0-1) vs FragCoord (0-iResolution)
+[ ] fragCoordUV (0-1) vs fragCoord (0-iResolution)
 
 PENDING:
 [ ] Detects if inputs "dirty" before rendering a renderlayer
@@ -31,6 +30,10 @@ META:
 
 
 //////////////////////////// Changelog ////////////////////////////////
+
+2021-07-23
+[x] Change FragCoordUV to fragCoordUV for consistency
+[x] Input Texture Keyboard
 
 2021-07-22
 [x] Keypresses routed into gametoy for web and desktop

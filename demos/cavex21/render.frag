@@ -21,7 +21,7 @@ bool TRIANGLE(vec2 vertices[3], vec2 uv)
 void main()
 {
     // Normalized pixel coordinates (from 0 to 1)
-    vec2 fragCoord = FragCoordUV * iResolution.xy;
+    vec2 fragCoord = fragCoordUV * iResolution.xy;
     vec2 uv = fragCoord/iResolution.xy;
 
     // Figure out screen coordinates with the camera
