@@ -1,0 +1,33 @@
+{
+    "metadata": {
+        "game_name": "Image",
+        "game_version": "0.0.0",
+        "author_name": "sdfgeoff",
+        "website": "https://www.shadertoy.com/view/lsXGz8",
+        "license": "CC-BY",
+        "release_date": "2021-07-23"
+    },
+    "graph": {
+        "nodes": [
+            {
+                "Image":{
+                    "name": "TestImage",
+                    "path": "test.png"
+                }
+            },
+            {
+                "Output": {
+                    "name": "Output"
+                }
+            }
+        ],
+        "links": [
+            {
+                    "start_node": "TestImage", 
+                    "start_output_slot": "tex",
+                    "end_node": "Output",
+                    "end_input_slot": "col"
+            }
+        ]
+    }
+}

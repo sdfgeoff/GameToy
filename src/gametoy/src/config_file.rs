@@ -65,8 +65,8 @@ pub struct Link {
 /// texture inputs and processes them to create some outputs
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Node {
-    /// A static texture as defined in a file
-    Texture(TextureConfig),
+    /// A static image as defined in a file
+    Image(ImageConfig),
 
     /// A renderpass - runs a GLSL shader on it's inputs to create
     /// the outputs.
@@ -77,9 +77,9 @@ pub enum Node {
     Keyboard(KeyboardConfig),
 }
 
-/// A node containing a static texture
+/// A node containing a static image/texture
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TextureConfig {
+pub struct ImageConfig {
     /// the path to read the texture from
     pub name: String,
     pub path: String,

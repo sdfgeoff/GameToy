@@ -49,7 +49,7 @@ impl Keyboard {
 
             gl.tex_storage_2d(
                 glow::TEXTURE_2D,
-                1,
+                0,
                 TEX_FORMAT.to_sized_internal_format(),
                 256,
                 3,
@@ -71,7 +71,7 @@ impl Node for Keyboard {
 
     fn update_resolution(&mut self, _gl: &glow::Context, _screen_resolution: &[i32; 2]) {}
 
-    fn bind(&mut self, gl: &glow::Context, quad: &Quad, game_state: &GameState) {
+    fn bind(&mut self, gl: &glow::Context, _quad: &Quad, game_state: &GameState) {
         unsafe {
             if game_state.keys_dirty {
                 gl.bind_texture(glow::TEXTURE_2D, Some(self.texture));

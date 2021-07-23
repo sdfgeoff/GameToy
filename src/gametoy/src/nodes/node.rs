@@ -18,7 +18,7 @@ pub enum NodeError {
 
     /// The text files that should contain the shader source code
     /// do not exist in the supplied GameData
-    MissingShaderSource(String),
+    MissingResource(String),
 
     /// This renderpass has two input slots with the same name
     DuplicateInputSlotName(String),

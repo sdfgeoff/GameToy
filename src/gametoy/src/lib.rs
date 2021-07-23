@@ -78,9 +78,6 @@ impl GameToy {
                             })?;
                     Rc::new(RefCell::new(Box::new(new_pass)))
                 }
-                config_file::Node::Texture(_texture_config) => {
-                    unimplemented!()
-                }
                 config_file::Node::Output(output_config) => {
                     let output = nodes::Output::create_from_config(&gl, output_config);
                     Rc::new(RefCell::new(Box::new(output)))
@@ -89,6 +86,11 @@ impl GameToy {
                     let keys = nodes::Keyboard::create_from_config(&gl, key_config)
                         .map_err(|e| GameToyError::NodeCreateError(key_config.name.clone(), e))?;
                     Rc::new(RefCell::new(Box::new(keys)))
+                }
+                config_file::Node::Image(image_config) => {
+                    let image = nodes::Image::create_from_config(&gl, &game_data, image_config)
+                        .map_err(|e| GameToyError::NodeCreateError(image_config.name.clone(), e))?;
+                    Rc::new(RefCell::new(Box::new(image)))
                 }
             };
             if links

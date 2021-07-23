@@ -20,7 +20,7 @@ use super::NodeError;
 use crate::config_file;
 use crate::gamedata::GameData;
 use crate::quad::Quad;
-use crate::shader::{ShaderError, SimpleShader};
+use crate::shader::SimpleShader;
 use crate::GameState;
 use glow::HasContext;
 
@@ -85,7 +85,6 @@ impl OutputTexture {
 
         unsafe {
             gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
-            //gl.pixel_storei(flow::UNPACK_FLIP_Y_WEBGL, 0);
 
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
@@ -464,7 +463,7 @@ fn generate_shader_text(
         let source = gamedata
             .shader_sources
             .get(shader_path)
-            .ok_or(NodeError::MissingShaderSource(shader_path.to_string()))?;
+            .ok_or(NodeError::MissingResource(shader_path.to_string()))?;
         shader_text += source;
     }
     // Nothing was added to the shader when reading from disk, so there is no
