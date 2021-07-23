@@ -88,14 +88,14 @@ pub struct TextureConfig {
 /// The node that actually writes to the screen
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OutputConfig {
-    pub name: String
+    pub name: String,
 }
 
 /// A texture that contains the state of the keyboard.
-/// The texture is 
+/// The texture is
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KeyboardConfig {
-    pub name: String
+    pub name: String,
 }
 
 /// A node that runs a GLSL shader on it's inputs.

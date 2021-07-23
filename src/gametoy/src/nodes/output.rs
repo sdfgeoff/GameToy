@@ -9,10 +9,10 @@ This buffer is always at the resolution of the users display.
 
 !*/
 
-use crate::config_file;
 use super::node;
-use crate::shader;
+use crate::config_file;
 use crate::quad::Quad;
+use crate::shader;
 use crate::GameState;
 
 use glow::HasContext;
@@ -60,12 +60,7 @@ impl node::Node for Output {
         self.resolution = screen_resolution.clone();
     }
 
-    fn bind(
-        &mut self,
-        gl: &glow::Context,
-        quad: &Quad,
-        _game_state: &GameState,
-    ) {
+    fn bind(&mut self, gl: &glow::Context, quad: &Quad, _game_state: &GameState) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, None); // Bind to the viewport - a framebuffer of None
             gl.viewport(0, 0, self.resolution[0], self.resolution[1]);

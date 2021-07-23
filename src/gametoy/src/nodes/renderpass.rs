@@ -15,13 +15,13 @@ TODOs:
 
 !*/
 
-use crate::config_file;
-use crate::gamedata::GameData;
-use crate::GameState;
 use super::node;
 use super::NodeError;
-use crate::shader::{ShaderError, SimpleShader};
+use crate::config_file;
+use crate::gamedata::GameData;
 use crate::quad::Quad;
+use crate::shader::{ShaderError, SimpleShader};
+use crate::GameState;
 use glow::HasContext;
 
 use std::collections::HashMap;
@@ -207,12 +207,7 @@ impl node::Node for RenderPass {
         &self.name
     }
 
-    fn bind(
-        &mut self,
-        gl: &glow::Context,
-        quad: &Quad,
-        game_state: &GameState,
-    ) {
+    fn bind(&mut self, gl: &glow::Context, quad: &Quad, game_state: &GameState) {
         unsafe {
             if self.back_framebuffer.is_some() && self.frame % 2 == 0 {
                 gl.bind_framebuffer(glow::FRAMEBUFFER, self.back_framebuffer);
@@ -466,9 +461,10 @@ fn generate_shader_text(
     let preamble_length = shader_text.len();
     // Now we can assemble all the shader source into a single file and compile it
     for shader_path in config.fragment_shader_paths.iter() {
-        let source = gamedata.shader_sources.get(shader_path).ok_or(
-            NodeError::MissingShaderSource(shader_path.to_string()),
-        )?;
+        let source = gamedata
+            .shader_sources
+            .get(shader_path)
+            .ok_or(NodeError::MissingShaderSource(shader_path.to_string()))?;
         shader_text += source;
     }
     // Nothing was added to the shader when reading from disk, so there is no

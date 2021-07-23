@@ -1,6 +1,5 @@
 use chrono::{Datelike, Timelike};
 
-
 pub struct GameState {
     /// Time since the program began
     pub time_since_start: f64,
@@ -31,6 +30,9 @@ pub struct GameState {
     pub keys_dirty: bool,
 }
 
+const ON: i8 = 127;
+const OFF: i8 = 0;
+const NEG: i8 = -128;
 
 impl GameState {
     pub fn new() -> Self {
@@ -39,7 +41,7 @@ impl GameState {
             time_delta: 0.0,
             date: [0, 0, 0, 0],
             prev_render_time: 0.0,
-            keys: [0;768],
+            keys: [0; 768],
             keys_dirty: false,
         }
     }
@@ -67,24 +69,21 @@ impl GameState {
     }
 
     pub fn set_key_state(&mut self, keycode: usize, state: bool) {
-        if state != (self.keys[keycode] == 1) {
+        if state != (self.keys[keycode] == ON) {
             // Pressed/held state
-            self.keys[keycode] = state as i8;
 
-            // Edge state
-            if state == true {
-                self.keys[256+keycode] = 1;
-            } else {
-                self.keys[256+keycode] = -1;
-            }
+            if state {
+                self.keys[keycode] = ON;
+                self.keys[256 + keycode] = ON;
 
-            // Toggle
-            if state == true {
-                if self.keys[512+keycode] == 0 {
-                    self.keys[512+keycode] = 1;
+                if self.keys[512 + keycode] == OFF {
+                    self.keys[512 + keycode] = ON;
                 } else {
-                    self.keys[512+keycode] = 0;
+                    self.keys[512 + keycode] = OFF;
                 }
+            } else {
+                self.keys[keycode] = OFF;
+                self.keys[256 + keycode] = NEG;
             }
 
             self.keys_dirty = true;
@@ -95,8 +94,8 @@ impl GameState {
     /// to ensure that the edge-trigger is correctly de-set for the next frame
     pub fn update_key_tick(&mut self) {
         for keycode in 0..256 {
-            if self.keys[256+keycode] != 0 {
-                self.keys[256+keycode] = 0;
+            if self.keys[256 + keycode] != OFF {
+                self.keys[256 + keycode] = OFF;
                 self.keys_dirty = true;
             }
         }

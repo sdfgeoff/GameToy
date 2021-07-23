@@ -41,12 +41,10 @@ struct Link {
     end_input_slot: String,
 }
 
-
 pub struct GameToy {
     gl: glow::Context,
 
     game_state: GameState,
-
 
     // Everything is rendered on the same quad, so lets just chuck that here
     quad: quad::Quad,
@@ -88,9 +86,8 @@ impl GameToy {
                     Rc::new(RefCell::new(Box::new(output)))
                 }
                 config_file::Node::Keyboard(key_config) => {
-                    let keys = nodes::Keyboard::create_from_config(&gl, key_config).map_err(|e| {
-                        GameToyError::NodeCreateError(key_config.name.clone(), e)
-                    })?;
+                    let keys = nodes::Keyboard::create_from_config(&gl, key_config)
+                        .map_err(|e| GameToyError::NodeCreateError(key_config.name.clone(), e))?;
                     Rc::new(RefCell::new(Box::new(keys)))
                 }
             };
@@ -224,7 +221,7 @@ impl GameToy {
         }
     }
 
-    /// Used for keyboard input into GameToy. 
+    /// Used for keyboard input into GameToy.
     /// Note that the keycode should be equivalent to the Javascript one for
     /// compatibility
     pub fn set_key_state(&mut self, key_code: u32, key_down: bool) {

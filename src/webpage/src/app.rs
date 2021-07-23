@@ -79,7 +79,6 @@ impl App {
 
     pub fn keydown_event(&mut self, event: KeyboardEvent) {
         self.toy.set_key_state(event.which(), true);
-
     }
     pub fn keyup_event(&mut self, event: KeyboardEvent) {
         self.toy.set_key_state(event.which(), false);

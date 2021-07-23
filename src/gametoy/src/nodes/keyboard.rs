@@ -1,7 +1,7 @@
-use glow::HasContext;
 use super::{Node, NodeError};
-use crate::GameState;
 use crate::quad::Quad;
+use crate::GameState;
+use glow::HasContext;
 
 pub struct Keyboard {
     name: String,
@@ -9,12 +9,14 @@ pub struct Keyboard {
     texture: glow::Texture,
 }
 
-
-const TEX_FORMAT: crate::config_file::OutputBufferFormat = crate::config_file::OutputBufferFormat::R8_SNORM;
+const TEX_FORMAT: crate::config_file::OutputBufferFormat =
+    crate::config_file::OutputBufferFormat::R8_SNORM;
 
 impl Keyboard {
-    pub fn create_from_config(gl: &glow::Context, config: &crate::config_file::KeyboardConfig) -> Result<Self, NodeError> {
-
+    pub fn create_from_config(
+        gl: &glow::Context,
+        config: &crate::config_file::KeyboardConfig,
+    ) -> Result<Self, NodeError> {
         let new_tex = unsafe {
             gl.create_texture()
                 .map_err(NodeError::CreateTextureFailed)?
@@ -45,7 +47,8 @@ impl Keyboard {
                 glow::CLAMP_TO_EDGE as i32,
             );
 
-            gl.tex_storage_2d(glow::TEXTURE_2D,
+            gl.tex_storage_2d(
+                glow::TEXTURE_2D,
                 1,
                 TEX_FORMAT.to_sized_internal_format(),
                 256,
@@ -53,10 +56,7 @@ impl Keyboard {
             );
         }
 
-        
-
-
-        Ok( Self {
+        Ok(Self {
             name: config.name.clone(),
             dirty: false,
             texture: new_tex,
@@ -64,29 +64,20 @@ impl Keyboard {
     }
 }
 
-
-
 impl Node for Keyboard {
     fn get_name(&self) -> &String {
         return &self.name;
     }
 
-    fn update_resolution(&mut self, _gl: &glow::Context, _screen_resolution: &[i32; 2]) {
-    }
+    fn update_resolution(&mut self, _gl: &glow::Context, _screen_resolution: &[i32; 2]) {}
 
-    fn bind(
-        &mut self,
-        gl: &glow::Context,
-        quad: &Quad,
-        game_state: &GameState,
-    ) {
+    fn bind(&mut self, gl: &glow::Context, quad: &Quad, game_state: &GameState) {
         unsafe {
-
             if game_state.keys_dirty {
                 gl.bind_texture(glow::TEXTURE_2D, Some(self.texture));
 
-
-                let key_state_array = unsafe{std::mem::transmute::<&[i8; 768], &[u8; 768]>(&game_state.keys)};
+                let key_state_array =
+                    std::mem::transmute::<&[i8; 768], &[u8; 768]>(&game_state.keys);
 
                 //println!("{:?}", key_state_array);
 
@@ -99,11 +90,10 @@ impl Node for Keyboard {
                     3,
                     TEX_FORMAT.to_format(),
                     TEX_FORMAT.to_type(),
-                    glow::PixelUnpackData::Slice(key_state_array)
+                    glow::PixelUnpackData::Slice(key_state_array),
                 );
                 self.dirty = true;
             }
-            
         }
     }
 
@@ -113,7 +103,6 @@ impl Node for Keyboard {
         } else {
             Err(NodeError::NoSuchOutputTexture(name.clone()))
         }
-        
     }
 
     fn set_input_texture(

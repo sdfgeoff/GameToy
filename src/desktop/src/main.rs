@@ -70,11 +70,14 @@ fn main() {
                     // Put something in here too
                     *control_flow = ControlFlow::Exit
                 }
-                WindowEvent::KeyboardInput  { ref input, .. } => {
+                WindowEvent::KeyboardInput { ref input, .. } => {
                     if let Some(meaning) = input.virtual_keycode {
                         let keycode = to_keycode(meaning);
                         if let Some(code) = keycode {
-                            toy.set_key_state(code, input.state == glutin::event::ElementState::Pressed);
+                            toy.set_key_state(
+                                code,
+                                input.state == glutin::event::ElementState::Pressed,
+                            );
                         }
                     }
                 }
@@ -139,8 +142,6 @@ fn load_tar(args: Vec<String>) -> Option<tar::Archive<fs::File>> {
 
     None
 }
-
-
 
 fn to_keycode(key: glutin::event::VirtualKeyCode) -> Option<u32> {
     match key {
@@ -238,7 +239,7 @@ fn to_keycode(key: glutin::event::VirtualKeyCode) -> Option<u32> {
         glutin::event::VirtualKeyCode::NumpadDivide => Some(111),
         glutin::event::VirtualKeyCode::NumpadDecimal => Some(110),
         glutin::event::VirtualKeyCode::NumpadComma => Some(188), // Same as reg. comma
-        glutin::event::VirtualKeyCode::NumpadEnter => Some(13), // Same as reg. enter
+        glutin::event::VirtualKeyCode::NumpadEnter => Some(13),  // Same as reg. enter
         glutin::event::VirtualKeyCode::NumpadEquals => Some(187), // Same as reg. equals
         glutin::event::VirtualKeyCode::NumpadMultiply => Some(106),
         glutin::event::VirtualKeyCode::NumpadSubtract => Some(109),
@@ -306,6 +307,6 @@ fn to_keycode(key: glutin::event::VirtualKeyCode) -> Option<u32> {
         glutin::event::VirtualKeyCode::Yen => None,
         glutin::event::VirtualKeyCode::Copy => None,
         glutin::event::VirtualKeyCode::Paste => None,
-        glutin::event::VirtualKeyCode::Cut => None
+        glutin::event::VirtualKeyCode::Cut => None,
     }
 }
