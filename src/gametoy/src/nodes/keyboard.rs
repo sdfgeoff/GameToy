@@ -49,7 +49,7 @@ impl Keyboard {
 
             gl.tex_storage_2d(
                 glow::TEXTURE_2D,
-                0,
+                1, // Mip Level
                 TEX_FORMAT.to_sized_internal_format(),
                 256,
                 3,
@@ -79,15 +79,13 @@ impl Node for Keyboard {
                 let key_state_array =
                     std::mem::transmute::<&[i8; 768], &[u8; 768]>(&game_state.keys);
 
-                //println!("{:?}", key_state_array);
-
                 gl.tex_sub_image_2d(
                     glow::TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    256,
-                    3,
+                    0, // MipLevel
+                    0, // X Offs
+                    0, // Y Offs
+                    256, // Width
+                    3, // Height
                     TEX_FORMAT.to_format(),
                     TEX_FORMAT.to_type(),
                     glow::PixelUnpackData::Slice(key_state_array),

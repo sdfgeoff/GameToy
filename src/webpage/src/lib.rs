@@ -81,7 +81,7 @@ pub async fn load_core(canvas: HtmlCanvasElement) -> Core {
 impl Core {
     #[wasm_bindgen(constructor)]
     pub fn new(canvas: HtmlCanvasElement, tar_data: Vec<u8>) -> Self {
-        console_error_panic_hook::set_once();
+        //console_error_panic_hook::set_once(); // Adds 4kb
         canvas.set_class_name("game loaded");
 
         let app = Rc::new(RefCell::new(app::App::new(canvas.clone(), tar_data)));

@@ -103,7 +103,7 @@ float draw_key(int key, float arrow) {
 
 
 void main() {
-	col.r = texture(keyboard, fragCoordUV).r;
+	col.r = texture(keyboard, fragCoordUV).r * 0.5 + 0.5;
 
 	vec3 edge_vec = vec3(0.0, INNER_SPACING, OUTER_SPACING);
 

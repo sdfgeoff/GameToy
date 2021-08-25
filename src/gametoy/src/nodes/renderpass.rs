@@ -253,7 +253,8 @@ impl node::Node for RenderPass {
                 if let Some(loc) = self.uniform_map.get(texture_name) {
                     gl.uniform_1_i32(Some(loc), texture_id as i32);
                 } else {
-                    panic!("No Uniform for input texture");
+                    // TODO: Raise a warning somehow?
+                    // panic!("No Uniform for input texture");
                 }
             }
 

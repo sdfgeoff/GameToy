@@ -121,13 +121,15 @@ fn load_tar(args: Vec<String>) -> Option<tar::Archive<fs::File>> {
         for entry in entries {
             let entry = entry.expect("Failed to read directory");
             let path = entry.path();
-
-            println!("[OK] Bundling file: {:?}", &path);
-            a.append_file(
-                path.file_name().expect("No filename???"),
-                &mut fs::File::open(path.clone()).expect("Failed to open file for packing"),
-            )
-            .unwrap();
+            let metadata = fs::metadata(&path).expect("File Deleted while bundling");
+            if metadata.is_file() {
+                println!("[OK] Bundling file: {:?}", &path);
+                a.append_file(
+                    path.file_name().expect("No filename???"),
+                    &mut fs::File::open(path.clone()).expect("Failed to open file for packing"),
+                )
+                .unwrap();
+            }
         }
     } else {
         println!("[OK] No data directory: {:?}", data_folder);

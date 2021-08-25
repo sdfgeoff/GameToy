@@ -97,5 +97,37 @@ void main()
         return;
     }
     
+    else if (addr.x == ADDR_BULLET_START.x && addr.y <= MAX_BULLETS) {
+        
+        vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
+        vec3 player_position, player_velocity;
+        float health, shoot;
+        unpack_player(player_state, player_position, player_velocity, health, shoot); 
+        
+        vec4 bullet_state = read_data(BUFFER_STATE, addr);
+        vec3 bullet_position, bullet_velocity;
+        float age;
+        unpack_bullet(bullet_state, bullet_position, bullet_velocity, age); 
+        
+        if (shoot == 0.0) {
+            
+            if (addr.y == 0) {
+                bullet_position = player_position;
+                bullet_velocity.y = cos(player_position.z) * BULLET_SPEED;
+                bullet_velocity.x = -sin(player_position.z) * BULLET_SPEED;
+                age = BULLET_LIFE_TIME;
+            } else {
+                bullet_state = read_data(BUFFER_STATE, addr + ivec2(0,-1));
+                unpack_bullet(bullet_state, bullet_position, bullet_velocity, age); 
+            }
+        }
+        
+        // TODO: Check Collision
+        bullet_position += bullet_velocity * iTimeDelta;
+        age = max(age - iTimeDelta, 0.0);
+        fragColor = pack_bullet(bullet_position, bullet_velocity, age);
+        return;
+    }
+    
     fragColor = vec4(0.0,0.0,1.0,1.0);
 }

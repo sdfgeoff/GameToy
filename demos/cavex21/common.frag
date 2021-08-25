@@ -34,8 +34,9 @@ const vec2 SHIP_RIGHT_WING = vec2(-0.5, -0.5) * SHIP_GRAPHICAL_SIZE;
 
 // Bullet settings
 const float BULLET_RELOAD_TIME_SEC = 0.2;
-//const float BULLET_LIFE_TIME = 1.0;
-//const float MAX_BULLETS = BULLET_LIFE_TIME / BULLET_RELOAD_TIME_SEC;
+const float BULLET_LIFE_TIME = 5.0;
+#define MAX_BULLETS 15 //BULLET_LIFE_TIME / BULLET_RELOAD_TIME_SEC;
+const float BULLET_SPEED = 5.0;
 
 // ------------------------- ADDRESSES ----------------------------
 //
@@ -64,10 +65,14 @@ const ivec2 ADDR_CAMERA_POSITION = ivec2(0,2);
 //   - y = x and y velocity
 //   - z = angular position and velocity
 //   - a = health and ammo state
-
 const ivec2 ADDR_PLAYER_STATE = ivec2(0,3);
 
-
+// ADDR_BULLET_START: The address where bullets are stored. Each bullet:
+//  - x = x and y position
+//  - y = x and y velocity
+//  - z = age
+// Bullets extend along the +y direction up to MAX_BULLETS
+const ivec2 ADDR_BULLET_START = ivec2(1,0);
 
 
 // Fetch a single pixel from the state buffer buffer
@@ -106,6 +111,35 @@ void unpack_player(in vec4 data, out vec3 position, out vec3 velocity, out float
     shoot = extra_data.y;
 }
 
+// Packs the player data into a vec4
+vec4 pack_bullet(vec3 position, vec3 velocity, float age) {
+    position = position / vec3(vec2(MAP_SIZE), PI);
+    velocity = velocity / vec3(vec2(MAP_SIZE), PI);
+    return vec4(
+        uintBitsToFloat(packSnorm2x16(position.xy)),
+        uintBitsToFloat(packSnorm2x16(velocity.xy)),
+        uintBitsToFloat(packSnorm2x16(vec2(age, 0.0))),
+        uintBitsToFloat(packSnorm2x16(vec2(0.0, 0.0)))
+    );
+}
+
+
+// Unpacks the player data from a vec4
+void unpack_bullet(in vec4 data, out vec3 position, out vec3 velocity, out float age) {
+    position.xy = unpackSnorm2x16(floatBitsToUint(data.x));
+    velocity.xy = unpackSnorm2x16(floatBitsToUint(data.y));
+    vec2 angle_data = unpackSnorm2x16(floatBitsToUint(data.z));
+    vec2 extra_data = unpackSnorm2x16(floatBitsToUint(data.w));
+    
+    age = angle_data.x;
+    //velocity.z = angle_data.y;
+    
+    position *= vec3(vec2(MAP_SIZE), PI);
+    velocity *= vec3(vec2(MAP_SIZE), PI);
+    
+    //health = extra_data.x;
+    //shoot = extra_data.y;
+}
 
 
 // ------------------------- MAP -------------------------------

@@ -2,17 +2,12 @@
 
 APPROVED:
 [ ] Mouse Input Uniform
-[ ] Static Texture Nodes
 [ ] Channel resolution uniforms
 [ ] Create user documentation
-[ ] Add FragCoord (0-iResolution) in addition to existing FragCoordUV
-
-DECISION NEEDED:
-[ ] fragCoordUV (0-1) vs fragCoord (0-iResolution)
 
 PENDING:
 [ ] Detects if inputs "dirty" before rendering a renderlayer
-[ ] Configure Texture filtering modes for renderlayer output textures.
+[ ] Configure Texture filtering modes for renderlayer output textures and static textures.
 [ ] Graph Editor
 [ ] Proper shutdown sequence?
 [ ] Reload TAR file without restarting?
@@ -32,6 +27,8 @@ META:
 //////////////////////////// Changelog ////////////////////////////////
 
 2021-07-23
+[x] Add FragCoord (0-iResolution) in addition to existing FragCoordUV
+[x] Static Texture Nodes
 [x] Change FragCoordUV to fragCoordUV for consistency
 [x] Input Texture Keyboard
 

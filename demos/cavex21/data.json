@@ -25,7 +25,7 @@
                         {"name": "BUFFER_MAP_STATE"},
                         {"name": "BUFFER_STATE"}
                     ],
-                    "resolution_scaling_mode": {"Fixed":[8,8]},
+                    "resolution_scaling_mode": {"Fixed":[8,16]},
                     "fragment_shader_paths": ["common.frag", "state.frag"],
                     "execution_mode": "Always"
                 }

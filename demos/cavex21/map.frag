@@ -63,6 +63,7 @@ void main()
         vec2 blast_vec = vec2(player_co - addr) + (delta);
         float r2 = dot(blast_vec, blast_vec);
         
+        // TODO: change from player position to bullets
         
         if (shoot == 0.0 && r2 < 1.0) {
         

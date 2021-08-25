@@ -61,25 +61,34 @@ void main()
     float map_islands = smoothstep(-0.01, 0.01, map_shape);
     
     float map_shadows = pow(map_shape, 0.2) * (0.5 - map_islands) * 2.0 + map_islands;
-    //map_edges = map_shadows + map_edges * 3.0;
-    //map_edges += 0.01 - abs(map_data.b) * 10.0;
     float map = map_islands + map_shadows * 0.5;
     vec4 map_col = vec4(map * 0.5);
     
+    
+    
+    // Draw bullets
+    float bullets = 0.0;
+    int i = 0;
+    for (i = 0; i <= MAX_BULLETS; i+=1) {
+        vec4 bullet_data = read_data(BUFFER_STATE, ADDR_BULLET_START + ivec2(0, i));
+        
+        vec3 pos, velocity;
+        float age;
+        unpack_bullet(bullet_data, pos, velocity, age);
+        if (age != 0.0) {
+            bullets += step(length(coords - pos.xy), 0.02);
+        }
+    }
+    
+    
+    
     fragColor = vec4(1.0);
+    
     
     fragColor *= map_col;
     
-    //fragColor.rgb += vec3(map_data.b);
-    //fragColor.rgb += vec3(step(-0.1, map_data.b)) * 0.2;
     
-    fragColor += player;
+    fragColor = mix(fragColor, vec4(0.8, 0.8, 0.2, 1.0), bullets);
+    fragColor = mix(fragColor, vec4(0.4, 0.4, 1.0, 1.0), player);
     
-    
-        
-    //fragColor = vec4(shoot, 0.0, 0.0, 0.0);
-    //fragColor = map_base(BUFFER_MAP_STATE, fragCoord / 10.0 - 5.0);
-    
-    
-    //fragColor = texelFetch(iChannel1, ivec2(fragCoord / 10.0) - 5, 0);
 }
