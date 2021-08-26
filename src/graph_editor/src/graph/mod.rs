@@ -1,5 +1,7 @@
 mod add_node_grid;
 mod renderpass;
+mod execution_mode;
+mod resolution_scaling_mode;
 
 use super::helpers::path_widget;
 
