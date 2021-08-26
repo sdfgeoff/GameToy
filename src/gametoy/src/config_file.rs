@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// may be generated using some sort of tool.
 /// This file contains everything needed to construct the game except
 /// for some "big" data such as textures and shaders
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ConfigFile {
     /// Data about the game, author etc.
     pub metadata: MetaData,
@@ -14,7 +14,7 @@ pub struct ConfigFile {
 }
 
 /// Contains information about the game/author etc.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MetaData {
     /// The name of the game. This is displayed while loading, on the window title etc.
     pub game_name: String,
@@ -36,7 +36,7 @@ pub struct MetaData {
 }
 
 /// Configures the rendergraph - the thing that actually runs the game.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GraphConfig {
     /// A node is a "process" that takes some inputs and generates some output
     /// Note that the order is important - the order in here defines
@@ -48,7 +48,7 @@ pub struct GraphConfig {
 }
 
 /// Connects two nodes in the rendergraph
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Link {
     /// The name of the node to start on
     pub start_node: String,
@@ -63,7 +63,7 @@ pub struct Link {
 
 /// A node in the rendergraph. A rendergraph node takes a bunch of
 /// texture inputs and processes them to create some outputs
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Node {
     /// A static image as defined in a file
     Image(ImageConfig),
@@ -78,7 +78,7 @@ pub enum Node {
 }
 
 /// A node containing a static image/texture
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ImageConfig {
     /// the path to read the texture from
     pub name: String,
@@ -86,20 +86,20 @@ pub struct ImageConfig {
 }
 
 /// The node that actually writes to the screen
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OutputConfig {
     pub name: String,
 }
 
 /// A texture that contains the state of the keyboard.
 /// The texture is
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct KeyboardConfig {
     pub name: String,
 }
 
 /// A node that runs a GLSL shader on it's inputs.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RenderPassConfig {
     /// the name of the renderpass
     pub name: String,
@@ -122,7 +122,7 @@ pub struct RenderPassConfig {
 }
 
 /// An output channel from a `RenderPass
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OutputBufferConfig {
     /// The name of the output channel
     pub name: String,
@@ -132,14 +132,14 @@ pub struct OutputBufferConfig {
 }
 
 /// An input channel for a `RenderPass`
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct InputBufferConfig {
     /// the name of the input channel
     pub name: String,
 }
 
 /// How the resolution of a `RenderPass` is configured
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ResolutionScalingMode {
     /// The resolution is a fixed size and does not change
     /// These are i32's because for some reason it's the way openGL wants it
@@ -150,7 +150,7 @@ pub enum ResolutionScalingMode {
 }
 
 /// When should the renderpass execute
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ExecutionMode {
     /// Draw on every frame
     Always,
@@ -169,7 +169,7 @@ pub enum ExecutionMode {
 /// RGBA8 and RGBA16F work on Chrome and Firefox.
 /// For a list of supposedly working ones see:
 /// https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum OutputBufferFormat {
     R8,

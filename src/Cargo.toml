@@ -3,4 +3,5 @@ members = [
     "gametoy",
     "webpage",
     "desktop",
+    "graph_editor",
 ]

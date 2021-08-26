@@ -4,6 +4,8 @@ use std::io::Read;
 
 use super::config_file;
 
+pub const CONFIG_FILE_NAME: &'static str = "data.json";
+
 #[derive(Debug)]
 pub enum GameDataError {
     TarError(std::io::Error),
@@ -39,7 +41,7 @@ impl GameData {
             };
             println!("Loading {:?}", filename_string);
 
-            if filename_string == "data.json" {
+            if filename_string == CONFIG_FILE_NAME {
                 //config_file = ConfigFile::
                 // files implement the Read trait
                 //let mut s = String::new();

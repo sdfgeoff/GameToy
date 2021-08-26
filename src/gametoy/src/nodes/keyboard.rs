@@ -81,11 +81,11 @@ impl Node for Keyboard {
 
                 gl.tex_sub_image_2d(
                     glow::TEXTURE_2D,
-                    0, // MipLevel
-                    0, // X Offs
-                    0, // Y Offs
+                    0,   // MipLevel
+                    0,   // X Offs
+                    0,   // Y Offs
                     256, // Width
-                    3, // Height
+                    3,   // Height
                     TEX_FORMAT.to_format(),
                     TEX_FORMAT.to_type(),
                     glow::PixelUnpackData::Slice(key_state_array),

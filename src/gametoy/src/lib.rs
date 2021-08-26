@@ -7,8 +7,8 @@ use std::rc::Rc;
 
 pub use tar;
 
-mod config_file;
-mod gamedata;
+pub mod config_file;
+pub mod gamedata;
 mod nodes;
 mod quad;
 mod shader;
