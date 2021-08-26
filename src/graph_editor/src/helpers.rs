@@ -35,7 +35,7 @@ pub fn list_edit_buttons<T>(ui: &mut Ui, item_list: &mut Vec<T>, item_id: usize)
 }
 
 /// Allows editing of items within a list
-pub fn list_edit<T: Clone, F>(ui: &mut Ui, item_list: &mut Vec<T>, mut draw_item_function: F)
+pub fn list_edit<T: Clone, F>(ui: &mut Ui, item_list: &mut Vec<T>, mut draw_item_function: F, list_edit_id: &str)
 where
     F: FnMut(&mut Ui, usize, &mut T),
 {
@@ -45,7 +45,7 @@ where
         .collect();
     let mut reflistout = reflist.clone();
 
-    egui::Grid::new("render_pass_grid")
+    egui::Grid::new(list_edit_id)
         .num_columns(2)
         .show(ui, |ui| {
             for (node_id, node) in reflist.iter().enumerate() {

@@ -232,7 +232,7 @@ impl epi::App for GametoyGraphEditor {
                                     self.selected_node_id = Some(node_id);
                                 };
                             };
-                        helpers::list_edit(ui, &mut new_proj.graph.nodes, draw_node);
+                        helpers::list_edit(ui, &mut new_proj.graph.nodes, draw_node, "render_order_grid");
 
                         ui.separator();
                         ui.label("Add Node");
