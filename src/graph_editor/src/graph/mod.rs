@@ -1,5 +1,5 @@
-mod renderpass;
 mod add_node_grid;
+mod renderpass;
 
 use super::helpers::path_widget;
 
@@ -8,7 +8,6 @@ pub use add_node_grid::add_node_widget;
 use gametoy::config_file::{Node, ResolutionScalingMode};
 use std::cell::RefCell;
 use std::rc::Rc;
-
 
 pub fn draw_node_properties(node_data: &mut Node, ui: &mut egui::Ui) {
     egui::Grid::new("metadata_grid")
@@ -26,9 +25,6 @@ pub fn draw_node_properties(node_data: &mut Node, ui: &mut egui::Ui) {
             }
             Node::RenderPass(node) => {
                 renderpass::edit_render_pass(node, ui);
-
-
-
             }
             Node::Output(node) => {
                 ui.label("Name:");
@@ -44,8 +40,6 @@ pub fn draw_node_properties(node_data: &mut Node, ui: &mut egui::Ui) {
             }
         });
 }
-
-
 
 pub fn get_node_name(node_data: &Node) -> &str {
     match node_data {

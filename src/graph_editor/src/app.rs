@@ -6,10 +6,9 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
-
 use super::graph;
-use super::metadata;
 use super::helpers;
+use super::metadata;
 
 pub struct GametoyGraphEditor {
     project_file: Option<PathBuf>,
@@ -31,29 +30,25 @@ fn create_default_project() -> gametoy::config_file::ConfigFile {
         graph: gametoy::config_file::GraphConfig {
             nodes: vec![
                 gametoy::config_file::Node::Keyboard(gametoy::config_file::KeyboardConfig {
-                    name: "Keyboard".to_string()
+                    name: "Keyboard".to_string(),
                 }),
                 gametoy::config_file::Node::RenderPass(gametoy::config_file::RenderPassConfig {
                     name: "Render Pass 1".to_string(),
-                    output_texture_slots: vec![
-                        gametoy::config_file::OutputBufferConfig {
-                            name: "RenderOut".to_string(),
-                            format: gametoy::config_file::OutputBufferFormat::RGB8
-                        }
-                    ],
-                    input_texture_slots: vec![
-                        gametoy::config_file::InputBufferConfig{
-                            name: "KeyboardInput".to_string()
-                        }
-                    ],
-                    resolution_scaling_mode: gametoy::config_file::ResolutionScalingMode::ViewportScale(1.0, 1.0),
+                    output_texture_slots: vec![gametoy::config_file::OutputBufferConfig {
+                        name: "RenderOut".to_string(),
+                        format: gametoy::config_file::OutputBufferFormat::RGB8,
+                    }],
+                    input_texture_slots: vec![gametoy::config_file::InputBufferConfig {
+                        name: "KeyboardInput".to_string(),
+                    }],
+                    resolution_scaling_mode:
+                        gametoy::config_file::ResolutionScalingMode::ViewportScale(1.0, 1.0),
                     fragment_shader_paths: vec![],
                     execution_mode: gametoy::config_file::ExecutionMode::Always,
                 }),
-                gametoy::config_file::Node::Output(gametoy::config_file::OutputConfig{
-                    name: "Output".to_string()
+                gametoy::config_file::Node::Output(gametoy::config_file::OutputConfig {
+                    name: "Output".to_string(),
                 }),
-
             ],
             links: vec![],
         },
@@ -66,7 +61,7 @@ impl Default for GametoyGraphEditor {
             project_file: None,
             project_data: create_default_project(),
             dirty: false,
-            selected_node_id: None
+            selected_node_id: None,
         }
     }
 }
@@ -205,58 +200,65 @@ impl epi::App for GametoyGraphEditor {
             });
         });
 
-
         egui::SidePanel::left("left_side_panel").show(ctx, |ui| {
             let scroll_area = egui::ScrollArea::auto_sized();
 
             scroll_area.show(ui, |ui| {
-                egui::CollapsingHeader::new("Metadata").default_open(true).show(ui, |ui| {
-                    
+                egui::CollapsingHeader::new("Metadata")
+                    .default_open(true)
+                    .show(ui, |ui| {
                         metadata::draw_metadata(&mut new_proj, ui);
                         ui.separator();
-                });
+                    });
 
+                egui::CollapsingHeader::new("Render Order")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        let draw_node =
+                            |ui: &mut egui::Ui,
+                             node_id: usize,
+                             node: &mut gametoy::config_file::Node| {
+                                let area_name = &format!(
+                                    "{} ({})",
+                                    graph::get_node_name(&node),
+                                    graph::get_node_type_name(&node)
+                                );
 
-            egui::CollapsingHeader::new("Render Order").default_open(true).show(ui, |ui| {
-                let draw_node = |ui: &mut egui::Ui, node_id: usize, node: &mut gametoy::config_file::Node| {
-                    let area_name = &format!(
-                                        "{} ({})",
-                                        graph::get_node_name(&node),
-                                        graph::get_node_type_name(&node)
-                                    );
-                    
-                    let available_space = ui.available_size();
-                    if ui.add_sized(available_space, egui::Button::new(area_name)).clicked() {
-                        self.selected_node_id = Some(node_id);
-                    };
-                };
-                helpers::list_edit(ui, &mut new_proj.graph.nodes, draw_node);
+                                let available_space = ui.available_size();
+                                if ui
+                                    .add_sized(available_space, egui::Button::new(area_name))
+                                    .clicked()
+                                {
+                                    self.selected_node_id = Some(node_id);
+                                };
+                            };
+                        helpers::list_edit(ui, &mut new_proj.graph.nodes, draw_node);
 
-                ui.separator();
-                ui.label("Add Node");
+                        ui.separator();
+                        ui.label("Add Node");
 
-                super::graph::add_node_widget(&mut new_proj.graph.nodes, ui);
-                ui.separator();
-            });
-            egui::CollapsingHeader::new("Node Properties").default_open(true).show(ui, |ui| {
-                match self.selected_node_id {
-                    Some(id) => {
-                        match new_proj.graph.nodes.get_mut(id) {
-                            Some(node) => {
-                                graph::draw_node_properties(node, ui);
+                        super::graph::add_node_widget(&mut new_proj.graph.nodes, ui);
+                        ui.separator();
+                    });
+                egui::CollapsingHeader::new("Node Properties")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        match self.selected_node_id {
+                            Some(id) => match new_proj.graph.nodes.get_mut(id) {
+                                Some(node) => {
+                                    graph::draw_node_properties(node, ui);
+                                }
+                                None => {
+                                    self.selected_node_id = None;
+                                }
                             },
                             None => {
-                                self.selected_node_id = None;
+                                ui.label("Select a Node");
                             }
-                        }
-                    },
-                    None => {
-                        ui.label("Select a Node");
-                    }
-                };
-                ui.separator();
-            })
-        });
+                        };
+                        ui.separator();
+                    })
+            });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
