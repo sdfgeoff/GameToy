@@ -1,5 +1,5 @@
 use crate::helpers::{list_edit, path_widget};
-use gametoy::config_file::{ResolutionScalingMode, ExecutionMode, RenderPassConfig, OutputBufferConfig, InputBufferConfig};
+use gametoy::config_file::{ResolutionScalingMode, ExecutionMode, RenderPassConfig, OutputBufferConfig, InputBufferConfig, OutputBufferFormat};
 
 pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
     ui.label("Name:");
@@ -83,9 +83,10 @@ pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
             },
         );
         if ui.button("Add Output").clicked() {
-            node.input_texture_slots
-                .push(InputBufferConfig {
+            node.output_texture_slots
+                .push(OutputBufferConfig {
                     name: String::new(),
+                    format: OutputBufferFormat::RGBA32F
                 });
         }
     });

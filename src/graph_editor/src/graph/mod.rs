@@ -5,9 +5,7 @@ use super::helpers::path_widget;
 
 pub use add_node_grid::add_node_widget;
 
-use gametoy::config_file::{Node, ResolutionScalingMode};
-use std::cell::RefCell;
-use std::rc::Rc;
+use gametoy::config_file::{Node};
 
 pub fn draw_node_properties(node_data: &mut Node, ui: &mut egui::Ui) {
     egui::Grid::new("metadata_grid")
