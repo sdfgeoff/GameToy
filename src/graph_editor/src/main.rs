@@ -1,5 +1,5 @@
 mod app;
-mod graph;
+mod nodes;
 mod metadata;
 
 mod helpers;

@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
-use super::graph;
+use super::nodes;
 use super::helpers;
 use super::metadata;
 
@@ -220,8 +220,8 @@ impl epi::App for GametoyGraphEditor {
                              node: &mut gametoy::config_file::Node| {
                                 let area_name = &format!(
                                     "{} ({})",
-                                    graph::get_node_name(&node),
-                                    graph::get_node_type_name(&node)
+                                    nodes::get_node_name(&node),
+                                    nodes::get_node_type_name(&node)
                                 );
 
                                 let available_space = ui.available_size();
@@ -237,7 +237,7 @@ impl epi::App for GametoyGraphEditor {
                         ui.separator();
                         ui.label("Add Node");
 
-                        super::graph::add_node_widget(&mut new_proj.graph.nodes, ui);
+                        super::nodes::add_node_widget(&mut new_proj.graph.nodes, ui);
                         ui.separator();
                     });
                 egui::CollapsingHeader::new("Node Properties")
@@ -246,7 +246,7 @@ impl epi::App for GametoyGraphEditor {
                         match self.selected_node_id {
                             Some(id) => match new_proj.graph.nodes.get_mut(id) {
                                 Some(node) => {
-                                    graph::draw_node_properties(node, ui);
+                                    nodes::draw_node_properties(node, ui);
                                 }
                                 None => {
                                     self.selected_node_id = None;
