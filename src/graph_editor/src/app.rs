@@ -6,6 +6,8 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
+use egui_nodes::{NodeConstructor, LinkArgs};
+
 use super::nodes;
 use super::helpers;
 use super::metadata;
@@ -15,6 +17,7 @@ pub struct GametoyGraphEditor {
     project_data: gametoy::config_file::ConfigFile,
     dirty: bool,
     selected_node_id: Option<usize>,
+    node_context: egui_nodes::Context,
 }
 
 fn create_default_project() -> gametoy::config_file::ConfigFile {
@@ -50,18 +53,28 @@ fn create_default_project() -> gametoy::config_file::ConfigFile {
                     name: "Output".to_string(),
                 }),
             ],
-            links: vec![],
+            links: vec![
+                gametoy::config_file::Link {
+                    start_node: "Keyboard".to_string(),
+                    start_output_slot: "tex".to_string(),
+                    end_node: "Render Pass 1".to_string(),
+                    end_input_slot: "KeyboardInput".to_string(),
+                },
+            ],
         },
     }
 }
 
 impl Default for GametoyGraphEditor {
     fn default() -> Self {
+        let mut context = egui_nodes::Context::default();
+        context.io.link_detatch_with_modifier_click = egui_nodes::Modifiers::Alt;
         Self {
             project_file: None,
             project_data: create_default_project(),
             dirty: false,
             selected_node_id: None,
+            node_context: context
         }
     }
 }
@@ -99,6 +112,8 @@ impl GametoyGraphEditor {
         if let Some(proj_file) = &self.project_file {
             if let Err(err) = save_data_file(&self.project_data, proj_file) {
                 println!("Saving data file failed: {:?}", err)
+            } else {
+                self.dirty = false;
             }
         }
     }
@@ -263,43 +278,149 @@ impl epi::App for GametoyGraphEditor {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
+            let graph_nodes = &mut new_proj.graph.nodes;
+            let graph_links = &mut new_proj.graph.links;
 
-            for (node_id, node) in new_proj.graph.nodes.iter().enumerate() {
-                let window_id = format!("{} ({})", nodes::get_node_name(&node), node_id);
-                egui::Window::new(&window_id).collapsible(false).show(ctx, |ui| {
+            let nodes: Vec<NodeConstructor> = graph_nodes.iter().enumerate().map(|(node_id, node)| {
+                let title = format!("({}) {}", node_id, nodes::get_node_name(&node));
 
-                    egui::Grid::new(format!("{}grid",window_id))
-                        .num_columns(2).min_col_width(100.0).show(ui, |ui| {
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
-                                ui.add(egui::Label::new("Inputs").weak());
-                                for input_slot in get_input_slots(&node) {
-                                    ui.horizontal(|ui| {
-                                        ui.add(input_connector());
-                                        ui.add(egui::Label::new(input_slot));
-                                    });
-                                    
-                                }
+                let mut node_constructor = NodeConstructor::new(node_id, Default::default())
+                    .with_title(move |ui| ui.label(title));
 
-                            });
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Max), |ui| {
-                                    ui.add(egui::Label::new("Outputs").weak());
-                                    for output_slot in get_output_slots(&node) {
-                                        ui.horizontal(|ui| {
-                                            ui.add(input_connector());
-                                            ui.add(egui::Label::new(output_slot));
-                                        });
-                                    }
-                            });
-                        });
+                
+                let input_slots = get_input_slots(&node);
+                for (slot_id, input_name) in input_slots.iter().enumerate() {
+                   let slot_name = input_name.to_string();
+                   let pin_id = pairing_function(node_id, slot_id);
+                   node_constructor = node_constructor.with_input_attribute(pin_id, Default::default(), move |ui| ui.label(slot_name));
+                }
+                for (slot_id, output_name) in get_output_slots(&node).iter().enumerate() {
+                    let slot_name = output_name.clone();
+                    let pin_id = pairing_function(node_id, slot_id + input_slots.len());
+                    node_constructor = node_constructor.with_output_attribute(pin_id, Default::default(), move |ui| ui.label(slot_name));
+                }
+                node_constructor
+            }).collect();
 
-                 });
+            // With a change in file format a lot of this complexity could be removed
+            // Here we convert from names of nodes + names of slots into ID's
+            // (and in a short distance we convert back)
+            use std::collections::HashMap;
+
+            let links = &mut vec![];
+            let mut node_name_to_id: HashMap<String, usize> = HashMap::new();
+            for (node_id, node) in graph_nodes.iter().enumerate() {
+                let node_name = nodes::get_node_name(node);
+                node_name_to_id.insert(node_name.to_string(), node_id);
+            }
+
+            for link in graph_links {
+                if let Some(start_node_id) = node_name_to_id.get(&link.start_node) {
+                    if let Some(end_node_id) = node_name_to_id.get(&link.end_node) {
+                        if let Some(start_slot_id) = get_output_slots(&graph_nodes[*start_node_id]).iter().position(|x| {*x == link.start_output_slot}) {
+                            if let Some(end_slot_id) = get_input_slots(&graph_nodes[*end_node_id]).iter().position(|x| {*x == link.end_input_slot}) {
+
+                                let input_slots = get_input_slots(&graph_nodes[*start_node_id]);
+                                let start_pin = pairing_function(*start_node_id, start_slot_id + input_slots.len());
+                                let end_pin = pairing_function(*end_node_id, end_slot_id);
+                                links.push((
+                                    start_pin,
+                                    end_pin,
+                                ));
+                            }
+                        }
+                    }
+                }
+                
             }
             
+
+            // add them to the ui
+            self.node_context.show(
+                nodes,
+                links.iter().enumerate().map(|(i, (start, end))| (i, *start, *end, LinkArgs::default())),
+                ui
+            );
+            
+            // remove destroyed links
+            if let Some(idx) = self.node_context.link_destroyed() {
+                println!("del: {}", idx);
+                links.remove(idx);
+            }
+        
+            // add created links
+            if let Some((start, end, _)) = self.node_context.link_created() {
+                let (start_node_id, start_slot_id_and_len) = unpairing_function(start);
+                let (end_node_id, end_slot_id) = unpairing_function(end);
+                let start_node = &graph_nodes[start_node_id];
+                let end_node = &graph_nodes[end_node_id];
+                let start_slot_id = start_slot_id_and_len - get_input_slots(&start_node).len();
+
+                let start_node_name = nodes::get_node_name(&start_node).to_string();
+                let end_node_name = nodes::get_node_name(&end_node).to_string();
+                let start_output_slot_name = get_output_slots(&start_node)[start_slot_id].clone();
+                let end_input_slot_name = get_input_slots(&end_node)[end_slot_id].clone();
+
+                let link_to_create = gametoy::config_file::Link {
+                    start_node: start_node_name,
+                    start_output_slot: start_output_slot_name,
+                    end_node: end_node_name,
+                    end_input_slot: end_input_slot_name,
+                };
+                // Remove old links that link to the same place:
+                new_proj.graph.links = new_proj.graph.links.iter().filter(|existing_link| {
+                    if existing_link.end_node == link_to_create.end_node && existing_link.end_input_slot == link_to_create.end_input_slot {
+                        false
+                    } else {
+                        true
+                    }
+                }).map(|l| {l.clone()}).collect();
+                new_proj.graph.links.push(link_to_create);
+            }
+
+            // Ensure links are to existing slots/nodes:
+            new_proj.graph.links = new_proj.graph.links.iter().filter(|existing_link| {
+                if let Some(start_node_id) = node_name_to_id.get(&existing_link.start_node) {
+                    if let Some(end_node_id) = node_name_to_id.get(&existing_link.end_node) {
+                        if get_output_slots(&graph_nodes[*start_node_id]).contains(&existing_link.start_output_slot) {
+                            if get_input_slots(&graph_nodes[*end_node_id]).contains(&existing_link.end_input_slot) {
+                                return true
+                            }
+                        }
+                    }
+                }
+                return false
+            }).map(|l| {l.clone()}).collect();
+
+            if let Some(selected_node) = self.node_context.get_selected_nodes().pop() {
+                self.selected_node_id = Some(selected_node);
+            }
         });
+
+
+
         if new_proj != self.project_data {
             self.project_data = new_proj;
             self.dirty = true;
         }
+    }
+}
+
+/// An Elegant Pairing Function by Matthew Szudzik @ Wolfram Research, Inc.
+fn pairing_function(x: usize, y: usize) -> usize {
+    if x >= y {
+        x * x + x + y
+    } else {
+        y * y + x
+    }
+}
+fn unpairing_function(z: usize) -> (usize, usize) {
+    let sqrtz = (f64::sqrt(z as f64)).floor() as usize;
+    let sqz = sqrtz * sqrtz;
+    if (z - sqz) >= sqrtz {
+        (sqrtz, z - sqz - sqrtz)
+    } else {
+        (z - sqz, sqrtz)
     }
 }
 
@@ -320,24 +441,4 @@ fn get_output_slots(node: &gametoy::config_file::Node) -> Vec<String>{
         gametoy::config_file::Node::Output(_output_data) => vec![],
         gametoy::config_file::Node::RenderPass(renderpass_data) => renderpass_data.output_texture_slots.iter().map(|x| x.name.clone()).collect(),
     }
-
-}
-
-fn input_connector_internals(ui: &mut egui::Ui) -> egui::Response {
-    let desired_size = ui.spacing().interact_size.y * egui::vec2(1.0, 1.0);
-    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
-    if response.clicked() {
-        response.mark_changed();
-    }
-    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, true, ""));
-
-    let visuals = ui.style().interact_selectable(&response, true);
-    let rect = rect.expand(visuals.expansion);
-    let radius = 0.5 * rect.height();
-    ui.painter().circle(rect.center(), 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
-    response
-}
-
-pub fn input_connector() -> impl egui::Widget {
-    move |ui: &mut egui::Ui| input_connector_internals(ui)
 }

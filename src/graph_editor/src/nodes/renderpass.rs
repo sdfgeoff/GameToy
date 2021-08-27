@@ -79,9 +79,8 @@ pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
                         ui.label("Name:");
                         path_widget(&mut output_config.name, ui);
                         ui.end_row();
-                        ui.label("Pixel Format:");
+                        ui.label("Format:");
                         output_buffer_format_selector(ui, &mut output_config.format, item_id);
-                        
                         ui.end_row();
                     });
             },
