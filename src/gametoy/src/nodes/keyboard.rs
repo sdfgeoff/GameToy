@@ -13,6 +13,8 @@ const TEX_FORMAT: crate::config_file::OutputBufferFormat =
     crate::config_file::OutputBufferFormat::R8_SNORM;
 
 impl Keyboard {
+    pub const OUTPUT_BUFFER_NAME: &'static str = "tex";
+
     pub fn create_from_config(
         gl: &glow::Context,
         config: &crate::config_file::KeyboardConfig,
@@ -96,7 +98,7 @@ impl Node for Keyboard {
     }
 
     fn get_output_texture(&self, name: &String) -> Result<glow::Texture, NodeError> {
-        if name == "tex" {
+        if name == Self::OUTPUT_BUFFER_NAME {
             Ok(self.texture)
         } else {
             Err(NodeError::NoSuchOutputTexture(name.clone()))

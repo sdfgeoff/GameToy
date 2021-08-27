@@ -264,17 +264,80 @@ impl epi::App for GametoyGraphEditor {
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
-            ui.heading("egui template");
-            ui.hyperlink("https://github.com/emilk/egui_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/egui_template/blob/master/",
-                "Source code."
-            ));
-            egui::warn_if_debug_build(ui);
+            for (node_id, node) in new_proj.graph.nodes.iter().enumerate() {
+                let window_id = format!("{} ({})", nodes::get_node_name(&node), node_id);
+                egui::Window::new(&window_id).collapsible(false).show(ctx, |ui| {
+
+                    egui::Grid::new(format!("{}grid",window_id))
+                        .num_columns(2).min_col_width(100.0).show(ui, |ui| {
+                            ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                                ui.add(egui::Label::new("Inputs").weak());
+                                for input_slot in get_input_slots(&node) {
+                                    ui.horizontal(|ui| {
+                                        ui.add(input_connector());
+                                        ui.add(egui::Label::new(input_slot));
+                                    });
+                                    
+                                }
+
+                            });
+                            ui.with_layout(egui::Layout::top_down(egui::Align::Max), |ui| {
+                                    ui.add(egui::Label::new("Outputs").weak());
+                                    for output_slot in get_output_slots(&node) {
+                                        ui.horizontal(|ui| {
+                                            ui.add(input_connector());
+                                            ui.add(egui::Label::new(output_slot));
+                                        });
+                                    }
+                            });
+                        });
+
+                 });
+            }
+            
         });
         if new_proj != self.project_data {
             self.project_data = new_proj;
             self.dirty = true;
         }
     }
+}
+
+fn get_input_slots(node: &gametoy::config_file::Node) -> Vec<String>{
+    match node {
+        gametoy::config_file::Node::Image(_image_data) => vec![],
+        gametoy::config_file::Node::Keyboard(_keyboard_data) => vec![],
+        gametoy::config_file::Node::Output(_output_data) => vec![gametoy::nodes::Output::INPUT_BUFFER_NAME.to_string()],
+        gametoy::config_file::Node::RenderPass(renderpass_data) => renderpass_data.input_texture_slots.iter().map(|x| x.name.clone()).collect(),
+    }
+
+}
+
+fn get_output_slots(node: &gametoy::config_file::Node) -> Vec<String>{
+    match node {
+        gametoy::config_file::Node::Image(_image_data) => vec![gametoy::nodes::Image::OUTPUT_BUFFER_NAME.to_string()],
+        gametoy::config_file::Node::Keyboard(_keyboard_data) => vec![gametoy::nodes::Keyboard::OUTPUT_BUFFER_NAME.to_string()],
+        gametoy::config_file::Node::Output(_output_data) => vec![],
+        gametoy::config_file::Node::RenderPass(renderpass_data) => renderpass_data.output_texture_slots.iter().map(|x| x.name.clone()).collect(),
+    }
+
+}
+
+fn input_connector_internals(ui: &mut egui::Ui) -> egui::Response {
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(1.0, 1.0);
+    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    if response.clicked() {
+        response.mark_changed();
+    }
+    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, true, ""));
+
+    let visuals = ui.style().interact_selectable(&response, true);
+    let rect = rect.expand(visuals.expansion);
+    let radius = 0.5 * rect.height();
+    ui.painter().circle(rect.center(), 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+    response
+}
+
+pub fn input_connector() -> impl egui::Widget {
+    move |ui: &mut egui::Ui| input_connector_internals(ui)
 }

@@ -6,6 +6,7 @@ use png::{BitDepth, ColorType};
 
 use crate::config_file::OutputBufferFormat;
 
+
 use png;
 
 pub struct Image {
@@ -14,6 +15,8 @@ pub struct Image {
 }
 
 impl Image {
+    pub const OUTPUT_BUFFER_NAME: &'static str = "tex";
+
     pub fn create_from_config(
         gl: &glow::Context,
         gamedata: &crate::gamedata::GameData,
@@ -108,7 +111,7 @@ impl Node for Image {
     fn bind(&mut self, _gl: &glow::Context, _quad: &Quad, _game_state: &GameState) {}
 
     fn get_output_texture(&self, name: &String) -> Result<glow::Texture, NodeError> {
-        if name == "tex" {
+        if name == Self::OUTPUT_BUFFER_NAME {
             Ok(self.texture)
         } else {
             Err(NodeError::NoSuchOutputTexture(name.clone()))

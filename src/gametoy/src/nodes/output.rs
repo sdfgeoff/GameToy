@@ -30,6 +30,8 @@ pub struct Output {
 }
 
 impl Output {
+    pub const INPUT_BUFFER_NAME: &'static str = "col";
+
     pub fn create_from_config(gl: &glow::Context, config: &config_file::OutputConfig) -> Self {
         let shader_program = shader::SimpleShader::new(
             &gl,
@@ -86,7 +88,7 @@ impl node::Node for Output {
         name: &String,
         texture: glow::Texture,
     ) -> Result<(), node::NodeError> {
-        if name == "col" {
+        if name == Self::INPUT_BUFFER_NAME {
             self.output_texture = Some(texture);
             Ok(())
         } else {

@@ -9,7 +9,7 @@ pub use tar;
 
 pub mod config_file;
 pub mod gamedata;
-mod nodes;
+pub mod nodes;
 mod quad;
 mod shader;
 
