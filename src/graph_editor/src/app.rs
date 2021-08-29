@@ -10,6 +10,7 @@ use super::helpers;
 use super::metadata;
 use super::nodes;
 use super::state;
+use super::render_order;
 
 use super::state::StateOperation;
 
@@ -184,43 +185,7 @@ impl epi::App for GametoyGraphEditor {
                 egui::CollapsingHeader::new("Render Order")
                     .default_open(true)
                     .show(ui, |ui| {
-                        let reactor = &mut self.reactor;
-                        let nodes = &self.state.project_data.graph.nodes;
-
-                        let draw_node =
-                            |ui: &mut egui::Ui,
-                             node_id: usize,
-                             node: &gametoy::config_file::Node| {
-                                let area_name = &format!(
-                                    "{} ({})",
-                                    nodes::get_node_name(&node),
-                                    nodes::get_node_type_name(&node)
-                                );
-
-                                let available_space = ui.available_size();
-                                if ui
-                                    .add_sized(available_space, egui::Button::new(area_name))
-                                    .clicked()
-                                {
-                                    reactor
-                                        .queue_operation(StateOperation::SelectNode(Some(node_id)));
-                                };
-                            };
-
-                        match helpers::list_edit(ui, nodes, draw_node, "render_order_grid") {
-                            helpers::ListEditResponse::None => {}
-                            helpers::ListEditResponse::Remove(node_id) => self
-                                .reactor
-                                .queue_operation(StateOperation::DeleteNode(node_id)),
-                            helpers::ListEditResponse::Swap(node_id_1, node_id_2) => self
-                                .reactor
-                                .queue_operation(StateOperation::SwapNodes(node_id_1, node_id_2)),
-                        };
-
-                        ui.separator();
-                        ui.label("Add Node");
-
-                        super::nodes::add_node_widget(ui, &self.state, &mut self.reactor);
+                        render_order::render_order_widget(ui, &mut self.reactor, &self.state.project_data.graph.nodes);
                         ui.separator();
                     });
 
@@ -232,10 +197,7 @@ impl epi::App for GametoyGraphEditor {
                                 Some(node) => {
                                     nodes::draw_node_properties(ui, &mut self.reactor, node, id);
                                 }
-                                None => {
-                                    self.reactor
-                                        .queue_operation(StateOperation::SelectNode(None));
-                                }
+                                None => {}
                             },
                             None => {
                                 ui.label("Select a Node");

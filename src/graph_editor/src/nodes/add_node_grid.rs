@@ -1,7 +1,7 @@
 use crate::state::{EditorState, Reactor, StateOperation};
+use gametoy::config_file::Node;
 
-pub fn add_node_widget(ui: &mut egui::Ui, state: &EditorState, reactor: &mut Reactor) {
-    let node_list = &state.project_data.graph.nodes;
+pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut Reactor) {
     egui::Grid::new("add_node_grid")
         .num_columns(2)
         .show(ui, |ui| {

@@ -4,6 +4,7 @@ mod helpers;
 mod metadata;
 mod nodes;
 mod state;
+mod render_order;
 
 fn main() {
     let ap = app::GametoyGraphEditor::default();
