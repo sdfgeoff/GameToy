@@ -1,7 +1,6 @@
 use gametoy::config_file::{ConfigFile, Link, MetaData, Node};
 use std::path::PathBuf;
 
-mod loader;
 pub mod templates;
 
 pub struct EditorState {
@@ -87,6 +86,19 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         }
         StateOperation::UpdateNode(node_id, new_node_data) => {
             // TODO: Bounds check and check for the name changing
+            let old_node_name = crate::nodes::get_node_name(&state.project_data.graph.nodes[node_id]);
+            let new_node_name = crate::nodes::get_node_name(&new_node_data);
+            if old_node_name != new_node_name {
+                for link in state.project_data.graph.links.iter_mut() {
+                    if link.start_node == old_node_name {
+                        link.start_node = new_node_name.to_string();
+                    }
+                    if link.end_node == old_node_name {
+                        link.end_node = new_node_name.to_string();
+                    }
+                }
+            }
+            // TODO: Check for link names changing as well
             state.project_data.graph.nodes[node_id] = new_node_data
         }
         StateOperation::CreateLink(link) => {
