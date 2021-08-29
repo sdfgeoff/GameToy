@@ -33,7 +33,7 @@ pub fn render_order_widget(ui: &mut egui::Ui, reactor: &mut Reactor, nodes: &Vec
     };
 
     ui.separator();
-    ui.label("Add Node");
-
-    add_node_widget(ui, nodes, reactor);
+    egui::menu::menu(ui, "Add Node", |ui| {
+        add_node_widget(ui, nodes, reactor);
+    });
 }                        

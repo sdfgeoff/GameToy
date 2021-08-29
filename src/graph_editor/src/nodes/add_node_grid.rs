@@ -2,9 +2,7 @@ use crate::state::{EditorState, Reactor, StateOperation};
 use gametoy::config_file::Node;
 
 pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut Reactor) {
-    egui::Grid::new("add_node_grid")
-        .num_columns(2)
-        .show(ui, |ui| {
+    
             if ui.button("RenderPass").clicked() {
                 reactor.queue_operation(StateOperation::CreateNode(gametoy::config_file::Node::RenderPass(
                     gametoy::config_file::RenderPassConfig {
@@ -32,7 +30,6 @@ pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut R
                     },
                 )));
             }
-            ui.end_row();
             if ui.button("Keyboard").clicked() {
                 reactor.queue_operation(StateOperation::CreateNode({
                     gametoy::config_file::Node::Keyboard(gametoy::config_file::KeyboardConfig {
@@ -47,5 +44,4 @@ pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut R
                     },
                 )));
             }
-        });
 }
