@@ -1,4 +1,4 @@
-use crate::state::{EditorState, Reactor, StateOperation};
+use crate::state::{Reactor, StateOperation};
 use gametoy::config_file::Node;
 
 pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut Reactor) {

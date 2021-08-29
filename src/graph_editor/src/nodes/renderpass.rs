@@ -1,4 +1,4 @@
-use crate::helpers::{list_edit, list_edit_mut, path_widget};
+use crate::helpers::{list_edit_mut, path_widget};
 use gametoy::config_file::{
     InputBufferConfig, OutputBufferConfig, OutputBufferFormat, RenderPassConfig,
 };

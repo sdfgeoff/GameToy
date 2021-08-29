@@ -2,7 +2,8 @@
 //! These should be kept as defined in code so that we can be user they
 //! Match any changes made to the config file format. If they were (for example)
 //! Creates using `parse(include_bytes!()` then they could fail.
-use super::EditorState;
+use super::{EditorState, GamePlayState, ProjectData};
+use std::collections::HashMap;
 
 // A single render pass with keyboard input
 pub fn simple_project() -> EditorState {
@@ -31,7 +32,7 @@ pub fn simple_project() -> EditorState {
                     }],
                     resolution_scaling_mode:
                         gametoy::config_file::ResolutionScalingMode::ViewportScale(1.0, 1.0),
-                    fragment_shader_paths: vec![],
+                    fragment_shader_paths: vec!["render.frag".to_string()],
                     execution_mode: gametoy::config_file::ExecutionMode::Always,
                 }),
                 gametoy::config_file::Node::Output(gametoy::config_file::OutputConfig {
@@ -54,10 +55,19 @@ pub fn simple_project() -> EditorState {
             ],
         },
     };
+    let mut files = HashMap::new();
+    files.insert("render.frag".to_string(), br#"Put your shader code in here"#.to_vec());
+
+
     EditorState {
         project_file: None,
-        project_data: config_file,
-        selected_node_id: None,
-        node_context: Default::default(),
+        project_data: ProjectData{
+            config_file,
+            files,
+        },
+        ui_state: Default::default(),
+        game_play_state: GamePlayState {
+            render_size: [640, 480],
+        }
     }
 }

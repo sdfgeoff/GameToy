@@ -6,13 +6,12 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
-use super::helpers;
 use super::metadata;
 use super::nodes;
 use super::state;
 use super::render_order;
 
-use super::state::StateOperation;
+use super::state::{StateOperation, UiLayoutMode};
 
 pub struct GametoyGraphEditor {
     pub state: state::EditorState,
@@ -65,7 +64,7 @@ impl GametoyGraphEditor {
     }
     /// Save the project to it's current project location
     fn save_file(&self, filepath: &PathBuf) {
-        if let Err(err) = save_data_file(&self.state.project_data, filepath) {
+        if let Err(err) = save_data_file(&self.state.project_data.config_file, filepath) {
             println!("Saving data file failed: {:?}", err)
         }
     }
@@ -178,22 +177,22 @@ impl epi::App for GametoyGraphEditor {
                 egui::CollapsingHeader::new("Metadata")
                     .default_open(true)
                     .show(ui, |ui| {
-                        metadata::draw_metadata(ui, &self.state, &mut self.reactor);
+                        metadata::draw_metadata(ui, &self.state.project_data.config_file.metadata, &mut self.reactor);
                         ui.separator();
                     });
 
                 egui::CollapsingHeader::new("Render Order")
                     .default_open(true)
                     .show(ui, |ui| {
-                        render_order::render_order_widget(ui, &mut self.reactor, &self.state.project_data.graph.nodes);
+                        render_order::render_order_widget(ui, &mut self.reactor, &self.state.project_data.config_file.graph.nodes);
                         ui.separator();
                     });
 
                 egui::CollapsingHeader::new("Node Properties")
                     .default_open(true)
                     .show(ui, |ui| {
-                        match self.state.selected_node_id {
-                            Some(id) => match self.state.project_data.graph.nodes.get(id) {
+                        match self.state.ui_state.selected_node_id {
+                            Some(id) => match self.state.project_data.config_file.graph.nodes.get(id) {
                                 Some(node) => {
                                     nodes::draw_node_properties(ui, &mut self.reactor, node, id);
                                 }
@@ -208,14 +207,85 @@ impl epi::App for GametoyGraphEditor {
             });
         });
 
+
+        egui::SidePanel::right("right_side_panel").default_width(300.0).show(ctx, |ui| {
+            // Top is taken up by an image
+            let scroll_area = egui::ScrollArea::auto_sized();
+            scroll_area.show(ui, |ui| {
+                let available_space = ui.available_size();
+                let render_size = [(available_space.x) as u32, (available_space.x * 9.0 / 16.0) as u32];
+
+                if render_size != self.state.game_play_state.render_size {
+                    self.reactor.queue_operation(StateOperation::SetGameRenderSize(render_size));
+                }
+
+                ui.add(egui::Image::new(egui::TextureId::Egui, [render_size[0] as f32, render_size[1] as f32]));
+                
+                ui.horizontal(|ui| {
+                    ui.label(format!("{} x {}", render_size[0], render_size[1]));
+                });
+                
+                ui.separator();
+                ui.heading("Project Files:");
+                egui::Grid::new("project_file_grid")
+                .num_columns(2).striped(true).show(ui, |ui| {
+                    for filename in self.state.project_data.files.keys() {
+                        if ui.button(filename.to_string()).clicked() {
+                            self.reactor.queue_operation(StateOperation::SetUiLayoutMode(UiLayoutMode::TextEditor(filename.to_string())));
+                        };
+                        ui.end_row();
+                    }
+                    if ui.button("data.json").clicked() {
+                        self.reactor.queue_operation(StateOperation::SetUiLayoutMode(UiLayoutMode::GraphEditor));
+                    }
+                });
+            });
+        });
+
+
+
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
-            super::graph::draw_rendergraph_editor(
-                ui,
-                &mut self.reactor,
-                &mut self.state.node_context,
-                &self.state.project_data,
-            );
+            match &self.state.ui_state.ui_layout_mode {
+                UiLayoutMode::GraphEditor => {
+                    super::graph::draw_rendergraph_editor(
+                        ui,
+                        &mut self.reactor,
+                        &mut self.state.ui_state.node_context,
+                        &self.state.project_data.config_file,
+                    );
+                }
+                UiLayoutMode::TextEditor(filename) => {
+                    match self.state.project_data.files.get(filename) {
+                        Some(buffer) => {
+                            match String::from_utf8(buffer.clone()) {
+                                Ok(mut buffer) => {
+                                    let scroll_area = egui::ScrollArea::auto_sized();
+                                    let orig = buffer.clone();
+                                    scroll_area.show(ui, |ui| {
+                                        
+                                        let size = ui.available_size();
+                                        ui.add_sized(
+                                            size, 
+                                            egui::TextEdit::multiline(&mut buffer).code_editor().id_source(filename).desired_width(size.x)
+                                        );
+                                    });
+                                    if buffer != orig {
+                                        self.reactor.queue_operation(StateOperation::WriteToFile(filename.clone(), buffer.into_bytes()));
+                                    }
+                                },
+                                Err(err) => {
+                                    ui.label(format!("File not readable as utf-8: {}", err));
+                                }
+                            }
+                            
+                        }
+                        None => {
+                            ui.label("No File Selected");
+                        }
+                    }
+                }
+            }
         });
         
         self.reactor.queue_operation(StateOperation::RemoveInvalidLinks);
