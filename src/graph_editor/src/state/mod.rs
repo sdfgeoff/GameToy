@@ -1,8 +1,8 @@
+use gametoy::config_file::{ConfigFile, Link, MetaData, Node};
 use std::path::PathBuf;
-use gametoy::config_file::{ConfigFile, MetaData, Node, Link};
 
-pub mod templates;
 mod loader;
+pub mod templates;
 
 pub struct EditorState {
     /// File path at which this project is stored
@@ -11,14 +11,11 @@ pub struct EditorState {
     /// Anything tracked by the undo system, saved to disk with the project etc.
     /// must be in here
     pub project_data: ConfigFile,
-    
-    // --------------- UI State -------------------
 
+    // --------------- UI State -------------------
     pub selected_node_id: Option<usize>,
     pub node_context: egui_nodes::Context,
 }
-
-
 
 pub enum StateOperation {
     SetProjectPath(Option<PathBuf>),
@@ -33,9 +30,8 @@ pub enum StateOperation {
     DeleteLink(usize),
 }
 
-
-pub struct Reactor{
-    operation_queue: Vec<StateOperation>
+pub struct Reactor {
+    operation_queue: Vec<StateOperation>,
 }
 
 impl Reactor {
@@ -54,15 +50,13 @@ impl Reactor {
             perform_operation(state, operation);
         }
     }
-
-    
 }
 
 pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
     match operation {
         StateOperation::SetProjectPath(new_path) => {
             state.project_file = new_path;
-        },
+        }
         StateOperation::LoadFromConfigFile(conf) => {
             state.project_data = conf;
         }
@@ -73,8 +67,7 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
                     state.node_context.selected_node_indices = vec![id];
                 }
             }
-            
-        },
+        }
         StateOperation::SetMetadata(metadata) => {
             state.project_data.metadata = metadata;
         }
@@ -104,4 +97,3 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         }
     }
 }
-

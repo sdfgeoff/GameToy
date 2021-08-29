@@ -1,7 +1,5 @@
 use gametoy::config_file::ResolutionScalingMode;
 
-
-
 #[derive(PartialEq)]
 enum ResScalingModeUi {
     Fixed,

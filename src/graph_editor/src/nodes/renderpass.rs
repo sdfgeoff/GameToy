@@ -1,9 +1,11 @@
 use crate::helpers::{list_edit, list_edit_mut, path_widget};
-use gametoy::config_file::{RenderPassConfig, OutputBufferConfig, InputBufferConfig, OutputBufferFormat};
+use gametoy::config_file::{
+    InputBufferConfig, OutputBufferConfig, OutputBufferFormat, RenderPassConfig,
+};
 
 use super::execution_mode::execution_mode_widget;
-use super::resolution_scaling_mode::resolution_scaling_mode_widget;
 use super::output_buffer_format::output_buffer_format_selector;
+use super::resolution_scaling_mode::resolution_scaling_mode_widget;
 
 pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
     ui.label("Name:");
@@ -27,9 +29,14 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
 
     ui.label("Shader Sources: ");
     ui.vertical(|ui| {
-        list_edit_mut(ui, &mut node.fragment_shader_paths, |ui, _item_id, path| {
-            path_widget(path, ui);
-        }, "shader_source_grid");
+        list_edit_mut(
+            ui,
+            &mut node.fragment_shader_paths,
+            |ui, _item_id, path| {
+                path_widget(path, ui);
+            },
+            "shader_source_grid",
+        );
         if ui.button("Add Source").clicked() {
             node.fragment_shader_paths.push(String::new());
         }
@@ -45,7 +52,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
             ui,
             &mut node.input_texture_slots,
             |ui, item_id, input_config| {
-                egui::Grid::new(format!("in_slot_grid{}",item_id))
+                egui::Grid::new(format!("in_slot_grid{}", item_id))
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
@@ -53,13 +60,12 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                         ui.end_row();
                     });
             },
-            "input_texture_grid"
+            "input_texture_grid",
         );
         if ui.button("Add Input").clicked() {
-            node.input_texture_slots
-                .push(InputBufferConfig {
-                    name: String::new(),
-                });
+            node.input_texture_slots.push(InputBufferConfig {
+                name: String::new(),
+            });
         }
     });
     ui.end_row();
@@ -73,7 +79,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
             ui,
             &mut node.output_texture_slots,
             |ui, item_id, output_config| {
-                egui::Grid::new(format!("out_slot_grid{}",item_id))
+                egui::Grid::new(format!("out_slot_grid{}", item_id))
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
@@ -84,16 +90,13 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                         ui.end_row();
                     });
             },
-            "output_texture_grid"
+            "output_texture_grid",
         );
         if ui.button("Add Output").clicked() {
-            node.output_texture_slots
-                .push(OutputBufferConfig {
-                    name: String::new(),
-                    format: OutputBufferFormat::RGBA32F
-                });
+            node.output_texture_slots.push(OutputBufferConfig {
+                name: String::new(),
+                format: OutputBufferFormat::RGBA32F,
+            });
         }
     });
 }
-
-

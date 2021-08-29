@@ -1,4 +1,4 @@
-use crate::state::{Reactor, EditorState, StateOperation};
+use crate::state::{EditorState, Reactor, StateOperation};
 
 pub fn add_node_widget(ui: &mut egui::Ui, state: &EditorState, reactor: &mut Reactor) {
     let node_list = &state.project_data.graph.nodes;

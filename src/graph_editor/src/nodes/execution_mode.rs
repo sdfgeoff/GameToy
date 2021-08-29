@@ -1,11 +1,6 @@
-
 use gametoy::config_file::ExecutionMode;
 
-
-pub fn execution_mode_widget(
-    ui: &mut egui::Ui,
-    execution_mode: &mut ExecutionMode,
-) {
+pub fn execution_mode_widget(ui: &mut egui::Ui, execution_mode: &mut ExecutionMode) {
     egui::ComboBox::from_id_source("Execution Mode")
         .selected_text(execution_mode_to_str(execution_mode))
         .show_ui(ui, |ui| {

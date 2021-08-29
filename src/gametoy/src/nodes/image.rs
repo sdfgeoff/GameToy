@@ -6,7 +6,6 @@ use png::{BitDepth, ColorType};
 
 use crate::config_file::OutputBufferFormat;
 
-
 use png;
 
 pub struct Image {

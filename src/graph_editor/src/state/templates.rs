@@ -4,7 +4,6 @@
 //! Creates using `parse(include_bytes!()` then they could fail.
 use super::EditorState;
 
-
 // A single render pass with keyboard input
 pub fn simple_project() -> EditorState {
     let config_file = gametoy::config_file::ConfigFile {
@@ -61,5 +60,4 @@ pub fn simple_project() -> EditorState {
         selected_node_id: None,
         node_context: Default::default(),
     }
-
 }

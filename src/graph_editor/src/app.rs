@@ -6,10 +6,9 @@ use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
-
-use super::nodes;
 use super::helpers;
 use super::metadata;
+use super::nodes;
 use super::state;
 
 use super::state::StateOperation;
@@ -18,7 +17,6 @@ pub struct GametoyGraphEditor {
     pub state: state::EditorState,
     pub reactor: state::Reactor,
     pub dirty: bool,
-    
 }
 
 impl Default for GametoyGraphEditor {
@@ -26,7 +24,7 @@ impl Default for GametoyGraphEditor {
         Self {
             state: state::templates::simple_project(),
             reactor: state::Reactor::new(),
-            dirty: false
+            dirty: false,
         }
     }
 }
@@ -50,8 +48,10 @@ impl GametoyGraphEditor {
         if let Some(filepath) = project_path {
             match load_data_file(&filepath) {
                 Ok(conf) => {
-                    self.reactor.queue_operation(state::StateOperation::SetProjectPath(Some(filepath)));
-                    self.reactor.queue_operation(state::StateOperation::LoadFromConfigFile(conf));
+                    self.reactor
+                        .queue_operation(state::StateOperation::SetProjectPath(Some(filepath)));
+                    self.reactor
+                        .queue_operation(state::StateOperation::LoadFromConfigFile(conf));
                     self.dirty = false; // We just opened the file. Nothings changed yet.
                 }
                 Err(err) => {
@@ -61,8 +61,6 @@ impl GametoyGraphEditor {
         } else {
             println!("No filepath to load");
         }
-
-        
     }
     /// Save the project to it's current project location
     fn save_file(&self, filepath: &PathBuf) {
@@ -92,9 +90,10 @@ impl GametoyGraphEditor {
             .add_filter("json", &["json"])
             .set_file_name(CONFIG_FILE_NAME)
             .set_directory(start_folder);
-        if let Some(output_file) = dialog.save_file(){
+        if let Some(output_file) = dialog.save_file() {
             self.save_file(&output_file);
-            self.reactor.queue_operation(state::StateOperation::SetProjectPath(Some(output_file)));
+            self.reactor
+                .queue_operation(state::StateOperation::SetProjectPath(Some(output_file)));
             self.dirty = false
         }
     }
@@ -137,7 +136,6 @@ impl epi::App for GametoyGraphEditor {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-
         //let mut new_proj = self.state.project_data.clone();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -186,7 +184,6 @@ impl epi::App for GametoyGraphEditor {
                 egui::CollapsingHeader::new("Render Order")
                     .default_open(true)
                     .show(ui, |ui| {
-
                         let reactor = &mut self.reactor;
                         let nodes = &self.state.project_data.graph.nodes;
 
@@ -205,14 +202,19 @@ impl epi::App for GametoyGraphEditor {
                                     .add_sized(available_space, egui::Button::new(area_name))
                                     .clicked()
                                 {
-                                    reactor.queue_operation(StateOperation::SelectNode(Some(node_id)));
+                                    reactor
+                                        .queue_operation(StateOperation::SelectNode(Some(node_id)));
                                 };
                             };
- 
+
                         match helpers::list_edit(ui, nodes, draw_node, "render_order_grid") {
-                            helpers::ListEditResponse::None => {},
-                            helpers::ListEditResponse::Remove(node_id) => self.reactor.queue_operation(StateOperation::DeleteNode(node_id)),
-                            helpers::ListEditResponse::Swap(node_id_1, node_id_2) => self.reactor.queue_operation(StateOperation::SwapNodes(node_id_1, node_id_2))
+                            helpers::ListEditResponse::None => {}
+                            helpers::ListEditResponse::Remove(node_id) => self
+                                .reactor
+                                .queue_operation(StateOperation::DeleteNode(node_id)),
+                            helpers::ListEditResponse::Swap(node_id_1, node_id_2) => self
+                                .reactor
+                                .queue_operation(StateOperation::SwapNodes(node_id_1, node_id_2)),
                         };
 
                         ui.separator();
@@ -221,8 +223,8 @@ impl epi::App for GametoyGraphEditor {
                         super::nodes::add_node_widget(ui, &self.state, &mut self.reactor);
                         ui.separator();
                     });
-                    
-                    egui::CollapsingHeader::new("Node Properties")
+
+                egui::CollapsingHeader::new("Node Properties")
                     .default_open(true)
                     .show(ui, |ui| {
                         match self.state.selected_node_id {
@@ -231,7 +233,8 @@ impl epi::App for GametoyGraphEditor {
                                     nodes::draw_node_properties(ui, &mut self.reactor, node, id);
                                 }
                                 None => {
-                                    self.reactor.queue_operation(StateOperation::SelectNode(None));
+                                    self.reactor
+                                        .queue_operation(StateOperation::SelectNode(None));
                                 }
                             },
                             None => {
@@ -243,20 +246,20 @@ impl epi::App for GametoyGraphEditor {
             });
         });
 
-        
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
-            super::graph::draw_rendergraph_editor(ui, &mut self.reactor, &mut self.state.node_context, &self.state.project_data);
+            super::graph::draw_rendergraph_editor(
+                ui,
+                &mut self.reactor,
+                &mut self.state.node_context,
+                &self.state.project_data,
+            );
         });
-        
 
         let old_project_state = self.state.project_data.clone();
         self.reactor.react(&mut self.state);
         if old_project_state != self.state.project_data {
             self.dirty = true
         }
-        
     }
 }
-
-

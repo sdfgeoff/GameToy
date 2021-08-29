@@ -1,8 +1,8 @@
 mod app;
-mod nodes;
-mod metadata;
 mod graph;
 mod helpers;
+mod metadata;
+mod nodes;
 mod state;
 
 fn main() {
