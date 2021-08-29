@@ -1,11 +1,11 @@
-use crate::helpers::{list_edit, path_widget};
+use crate::helpers::{list_edit, list_edit_mut, path_widget};
 use gametoy::config_file::{RenderPassConfig, OutputBufferConfig, InputBufferConfig, OutputBufferFormat};
 
 use super::execution_mode::execution_mode_widget;
 use super::resolution_scaling_mode::resolution_scaling_mode_widget;
 use super::output_buffer_format::output_buffer_format_selector;
 
-pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
+pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
     ui.label("Name:");
     ui.text_edit_singleline(&mut node.name)
         .on_hover_text("Name of the node");
@@ -27,7 +27,7 @@ pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
 
     ui.label("Shader Sources: ");
     ui.vertical(|ui| {
-        list_edit(ui, &mut node.fragment_shader_paths, |ui, _item_id, path| {
+        list_edit_mut(ui, &mut node.fragment_shader_paths, |ui, _item_id, path| {
             path_widget(path, ui);
         }, "shader_source_grid");
         if ui.button("Add Source").clicked() {
@@ -41,7 +41,7 @@ pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
 
     ui.label("Input Textures: ");
     ui.vertical(|ui| {
-        list_edit(
+        list_edit_mut(
             ui,
             &mut node.input_texture_slots,
             |ui, item_id, input_config| {
@@ -69,7 +69,7 @@ pub fn edit_render_pass(node: &mut RenderPassConfig, ui: &mut egui::Ui) {
 
     ui.label("Output Textures: ");
     ui.vertical(|ui| {
-        list_edit(
+        list_edit_mut(
             ui,
             &mut node.output_texture_slots,
             |ui, item_id, output_config| {

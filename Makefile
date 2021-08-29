@@ -11,6 +11,8 @@ OUTPUT_FOLDER = ${CURDIR}/bin
 EXECUTABLE_OUTPUT_FILE = $(OUTPUT_FOLDER)/gametoy
 WEB_OUTPUT_FOLDER = $(OUTPUT_FOLDER)/web
 
+EDITOR_OUTPUT_FILE = $(OUTPUT_FOLDER)/editor
+
 
 # If RELEASE=1, add --release to the build flags
 RELEASE ?= 1
@@ -18,10 +20,12 @@ ifeq ($(RELEASE), 1)
 	BUILD_FLAGS += --release
     WASM_ARTIFACT_DIR = $(WORKSPACE_DIR)/target/wasm32-unknown-unknown/release/
 	ENGINE_ARTIFACT_PATH = $(WORKSPACE_DIR)/target/release/desktop
+	EDITOR_ARTIFACT_PATH = $(WORKSPACE_DIR)/target/release/graph_editor
 else
 	BUILD_FLAGS += 
     WASM_ARTIFACT_DIR = $(WORKSPACE_DIR)/target/wasm32-unknown-unknown/debug/
 	ENGINE_ARTIFACT_PATH = $(WORKSPACE_DIR)/target/debug/desktop
+	EDITOR_ARTIFACT_PATH = $(WORKSPACE_DIR)/target/debug/graph_editor
 endif
 
 .DEFAULT_GOAL = game
@@ -72,3 +76,10 @@ clippy:
 
 test:
 	cd $(WORKSPACE_DIR); cargo test
+
+build-editor:
+	cd $(WORKSPACE_DIR); cargo build --bin graph_editor $(BUILD_FLAGS)
+	cp $(EDITOR_ARTIFACT_PATH) $(EDITOR_OUTPUT_FILE)
+
+editor: build-editor
+	$(EDITOR_OUTPUT_FILE)

@@ -1,8 +1,9 @@
 mod app;
 mod nodes;
 mod metadata;
-
+mod graph;
 mod helpers;
+mod state;
 
 fn main() {
     let ap = app::GametoyGraphEditor::default();
