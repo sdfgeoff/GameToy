@@ -123,24 +123,6 @@ pub fn draw_rendergraph_editor(
         reactor.queue_operation(StateOperation::CreateLink(link_to_create));
     }
 
-    // Ensure links are to existing slots/nodes:
-    for (existing_link_id, existing_link) in new_proj.graph.links.iter().enumerate() {
-        if let Some(start_node_id) = node_name_to_id.get(&existing_link.start_node) {
-            if let Some(end_node_id) = node_name_to_id.get(&existing_link.end_node) {
-                if get_output_slots(&graph_nodes[*start_node_id])
-                    .contains(&existing_link.start_output_slot)
-                {
-                    if get_input_slots(&graph_nodes[*end_node_id])
-                        .contains(&existing_link.end_input_slot)
-                    {
-                        continue;
-                    }
-                }
-            }
-        }
-        reactor.queue_operation(StateOperation::DeleteLink(existing_link_id));
-    }
-
     if let Some(selected_node) = node_context.get_selected_nodes().pop() {
         reactor.queue_operation(StateOperation::SelectNode(Some(selected_node)));
     }

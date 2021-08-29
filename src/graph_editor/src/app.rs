@@ -255,7 +255,8 @@ impl epi::App for GametoyGraphEditor {
                 &self.state.project_data,
             );
         });
-
+        
+        self.reactor.queue_operation(StateOperation::RemoveInvalidLinks);
         let old_project_state = self.state.project_data.clone();
         self.reactor.react(&mut self.state);
         if old_project_state != self.state.project_data {

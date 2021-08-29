@@ -27,6 +27,7 @@ pub enum StateOperation {
     UpdateNode(usize, Node),
     CreateLink(Link),
     DeleteLink(usize),
+    RemoveInvalidLinks,
 }
 
 pub struct Reactor {
@@ -86,9 +87,11 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         }
         StateOperation::UpdateNode(node_id, new_node_data) => {
             // TODO: Bounds check and check for the name changing
-            let old_node_name = crate::nodes::get_node_name(&state.project_data.graph.nodes[node_id]);
-            let new_node_name = crate::nodes::get_node_name(&new_node_data);
-            if old_node_name != new_node_name {
+            {
+                let old_node_data = &state.project_data.graph.nodes[node_id];
+                let old_node_name = crate::nodes::get_node_name(&old_node_data);
+                let new_node_name = crate::nodes::get_node_name(&new_node_data);
+
                 for link in state.project_data.graph.links.iter_mut() {
                     if link.start_node == old_node_name {
                         link.start_node = new_node_name.to_string();
@@ -96,9 +99,9 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
                     if link.end_node == old_node_name {
                         link.end_node = new_node_name.to_string();
                     }
+                    // TODO: Check for link names changing as well
                 }
             }
-            // TODO: Check for link names changing as well
             state.project_data.graph.nodes[node_id] = new_node_data
         }
         StateOperation::CreateLink(link) => {
@@ -106,6 +109,31 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         }
         StateOperation::DeleteLink(link_id) => {
             state.project_data.graph.links.remove(link_id);
+        }
+        StateOperation::RemoveInvalidLinks => {
+            // Ensure links are to existing slots/nodes:
+            let mut node_name_to_id: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            for (node_id, node) in state.project_data.graph.nodes.iter().enumerate() {
+                let node_name = crate::nodes::get_node_name(node);
+                node_name_to_id.insert(node_name.to_string(), node_id);
+            }
+
+            let graph_nodes = &state.project_data.graph.nodes;
+
+            state.project_data.graph.links.retain(|existing_link|{
+                if let Some(start_node_id) = node_name_to_id.get(&existing_link.start_node) {
+                    if let Some(end_node_id) = node_name_to_id.get(&existing_link.end_node) {
+                        let start_node = &graph_nodes[*start_node_id];
+                        if crate::nodes::get_output_slots(start_node).contains(&existing_link.start_output_slot) {
+                            let end_node = &graph_nodes[*end_node_id];
+                            if crate::nodes::get_input_slots(end_node).contains(&existing_link.end_input_slot) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                false
+            })
         }
     }
 }
