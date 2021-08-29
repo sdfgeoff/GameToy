@@ -7,6 +7,7 @@
  
  1) Links draw on top of nodes (changed ordering in show function)
  2) Can create self-node links (commented check in should_link_snap_to_pin function) 
+ 3) Exposing the selected node ID vector so it can be written to
  
 ### Example
 ``` rust

@@ -68,6 +68,12 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         }
         StateOperation::SelectNode(node_id) => {
             state.selected_node_id = node_id;
+            if let Some(id) = node_id {
+                if !state.node_context.selected_node_indices.contains(&id) {
+                    state.node_context.selected_node_indices = vec![id];
+                }
+            }
+            
         },
         StateOperation::SetMetadata(metadata) => {
             state.project_data.metadata = metadata;

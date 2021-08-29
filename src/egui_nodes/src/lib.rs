@@ -119,7 +119,7 @@ pub struct Context {
 
     panning: egui::Vec2,
 
-    selected_node_indices: Vec<usize>,
+    pub selected_node_indices: Vec<usize>,
     selected_link_indices: Vec<usize>,
 
     #[derivative(Default(value="ClickInteractionType::None"))]

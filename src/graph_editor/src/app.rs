@@ -97,8 +97,6 @@ impl GametoyGraphEditor {
             self.reactor.queue_operation(state::StateOperation::SetProjectPath(Some(output_file)));
             self.dirty = false
         }
-        
-        
     }
 
     fn new(&mut self) {

@@ -1,4 +1,3 @@
-use gametoy::config_file::ConfigFile;
 use super::state::{EditorState, Reactor, StateOperation};
 
 pub fn draw_metadata(ui: &mut egui::Ui, state: &EditorState, reactor: &mut Reactor) {

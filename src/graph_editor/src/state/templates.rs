@@ -1,6 +1,11 @@
+//! Defines some projects that can be created from the "New" menu
+//! These should be kept as defined in code so that we can be user they
+//! Match any changes made to the config file format. If they were (for example)
+//! Creates using `parse(include_bytes!()` then they could fail.
 use super::EditorState;
 
 
+// A single render pass with keyboard input
 pub fn simple_project() -> EditorState {
     let config_file = gametoy::config_file::ConfigFile {
         metadata: gametoy::config_file::MetaData {
@@ -40,6 +45,12 @@ pub fn simple_project() -> EditorState {
                     start_output_slot: "tex".to_string(),
                     end_node: "Render Pass 1".to_string(),
                     end_input_slot: "KeyboardInput".to_string(),
+                },
+                gametoy::config_file::Link {
+                    start_node: "Render Pass 1".to_string(),
+                    start_output_slot: "RenderOut".to_string(),
+                    end_node: "Output".to_string(),
+                    end_input_slot: "col".to_string(),
                 },
             ],
         },
