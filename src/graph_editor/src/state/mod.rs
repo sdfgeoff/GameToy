@@ -21,6 +21,7 @@ pub struct GamePlayState {
     pub render_size: [u32;2],
 }
 
+
 #[derive(Default)]
 pub struct UiState {
     pub selected_node_id: Option<usize>,
@@ -44,6 +45,8 @@ pub struct EditorState {
     pub project_file: Option<PathBuf>,
     pub game_play_state: GamePlayState,
     pub ui_state: UiState,
+
+    pub gametoy_instance: Option<Result<gametoy::GameToy, gametoy::GameToyError>>,
 }
 
 pub enum StateOperation {
@@ -60,7 +63,8 @@ pub enum StateOperation {
     RemoveInvalidLinks,
     SetGameRenderSize([u32;2]),
     SetUiLayoutMode(UiLayoutMode),
-    WriteToFile(String, Vec<u8>)
+    WriteToFile(String, Vec<u8>),
+    CompileGametoy,
 }
 
 pub struct Reactor {
@@ -78,20 +82,21 @@ impl Reactor {
         self.operation_queue.push(operation);
     }
 
-    pub fn react(&mut self, state: &mut EditorState) {
+    pub fn react(&mut self, state: &mut EditorState, gl: &glow::Context) {
         while let Some(operation) = self.operation_queue.pop() {
-            perform_operation(state, operation);
+            perform_operation(state, operation, gl);
         }
     }
 }
 
-pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
+pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl: &glow::Context) {
     match operation {
         StateOperation::SetProjectPath(new_path) => {
             state.project_file = new_path;
         }
         StateOperation::LoadFromConfigFile(conf) => {
             state.project_data.config_file = conf;
+            state.gametoy_instance = None;
             // TODO: load associated resources
         }
         StateOperation::SelectNode(node_id) => {
@@ -179,5 +184,47 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation) {
         StateOperation::WriteToFile(filename, buffer) => {
             state.project_data.files.insert(filename, buffer);
         }
+
+        StateOperation::CompileGametoy => {
+            // First we create a TAR of all the assets
+            if state.gametoy_instance.is_some(){
+                todo!("Implement destruction of gametoy");
+            }
+            let instance = create_gametoy_instance(&state.project_data, gl);
+            state.gametoy_instance = Some(instance);
+        }
     }
+}
+
+
+fn create_gametoy_instance(project_data: &ProjectData, gl: &glow::Context) -> Result<gametoy::GameToy, gametoy::GameToyError> {
+
+    let mut tarfile = gametoy::tar::Builder::new(Vec::new());
+
+    for (filename, filedata) in project_data.files.iter() {
+        let mut header = gametoy::tar::Header::new_gnu();
+        header.set_size(filedata.len() as u64);
+        header.set_cksum();
+
+        tarfile.append_data(&mut header, filename, filedata.as_slice()).expect("Failed to pack into tar");
+    }
+
+    {
+        let config_file_str = serde_json::to_string(&project_data.config_file).expect("Failed to serialize config file");
+        let config_file_bytes = config_file_str.as_bytes();
+        let mut header = gametoy::tar::Header::new_gnu();
+        header.set_size(config_file_bytes.len() as u64);
+        header.set_cksum();
+
+        tarfile.append_data(&mut header, "data.json", config_file_bytes).expect("Failed to pack into tar");
+
+    }
+    
+
+    let tardata = tarfile.into_inner().expect("Failed to create archive");
+    let tarchive = gametoy::tar::Archive::new(tardata.as_slice());
+
+
+    gametoy::GameToy::new(gl, tarchive)
+    //Err(gametoy::GameToyError::DuplicateNodeName("DuplicateNodeName".to_string()))
 }

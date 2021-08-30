@@ -42,8 +42,6 @@ struct Link {
 }
 
 pub struct GameToy {
-    gl: glow::Context,
-
     game_state: GameState,
 
     // Everything is rendered on the same quad, so lets just chuck that here
@@ -53,42 +51,48 @@ pub struct GameToy {
 
     links: HashMap<String, Vec<Link>>,
 
+    pub output_node_maybe: Option<NodeRef>,
+
     resolution: [i32; 2],
 }
 
 impl GameToy {
-    pub fn new<R>(gl: glow::Context, data: tar::Archive<R>) -> Result<Self, GameToyError>
+    pub fn new<R>(gl: &glow::Context, data: tar::Archive<R>) -> Result<Self, GameToyError>
     where
         R: Read,
     {
         let game_data = gamedata::GameData::from_tar(data).map_err(GameToyError::DataLoadError)?;
 
-        let quad = quad::Quad::new(&gl).map_err(GameToyError::QuadCreateError)?;
+        let quad = quad::Quad::new(gl).map_err(GameToyError::QuadCreateError)?;
 
         let mut nodes: Vec<NodeRef> = vec![];
         let mut links = HashMap::new();
+
+        let mut output_node_maybe = None;
 
         for node in game_data.config_file.graph.nodes.iter() {
             let new_node: NodeRef = match node {
                 config_file::Node::RenderPass(pass_config) => {
                     let new_pass =
-                        nodes::RenderPass::create_from_config(&gl, &game_data, pass_config)
+                        nodes::RenderPass::create_from_config(gl, &game_data, pass_config)
                             .map_err(|e| {
                                 GameToyError::NodeCreateError(pass_config.name.clone(), e)
                             })?;
                     Rc::new(RefCell::new(Box::new(new_pass)))
                 }
                 config_file::Node::Output(output_config) => {
-                    let output = nodes::Output::create_from_config(&gl, output_config);
-                    Rc::new(RefCell::new(Box::new(output)))
+                    let output = nodes::Output::create_from_config(gl, output_config);
+                    let output_node: NodeRef = Rc::new(RefCell::new(Box::new(output)));
+                    output_node_maybe = Some(output_node.clone());
+                    output_node
                 }
                 config_file::Node::Keyboard(key_config) => {
-                    let keys = nodes::Keyboard::create_from_config(&gl, key_config)
+                    let keys = nodes::Keyboard::create_from_config(gl, key_config)
                         .map_err(|e| GameToyError::NodeCreateError(key_config.name.clone(), e))?;
                     Rc::new(RefCell::new(Box::new(keys)))
                 }
                 config_file::Node::Image(image_config) => {
-                    let image = nodes::Image::create_from_config(&gl, &game_data, image_config)
+                    let image = nodes::Image::create_from_config(gl, &game_data, image_config)
                         .map_err(|e| GameToyError::NodeCreateError(image_config.name.clone(), e))?;
                     Rc::new(RefCell::new(Box::new(image)))
                 }
@@ -136,16 +140,16 @@ impl GameToy {
             })
         }
 
-        unsafe {
-            gl.clear_color(0.0, 1.0, 1.0, 1.0);
-        }
+        //unsafe {
+        //    gl.clear_color(0.0, 1.0, 1.0, 1.0);
+        //}
 
         Ok(Self {
-            gl,
             game_state: GameState::new(),
             quad,
             nodes,
             links,
+            output_node_maybe,
             resolution: [1920, 1080],
         })
     }
@@ -154,12 +158,17 @@ impl GameToy {
     // Requires the time as seconds past the unix epoch. Note that
     // if you pass this in as zero, the simulation will assume a frametime of
     // 60FPS.
-    pub fn render(&mut self, time_since_unix_epoch: f64) -> Result<(), GameToyError> {
+    pub fn render(&mut self, gl: &glow::Context, time_since_unix_epoch: f64) -> Result<(), GameToyError> {
         self.game_state.update_times(time_since_unix_epoch);
 
         unsafe {
             // Render all of the various passes
             for node in &self.nodes {
+                if let Some(outnode) = &self.output_node_maybe {
+                    if Rc::ptr_eq(node, outnode) {
+                        continue;
+                    }
+                }
                 let mut node_mut = node.borrow_mut();
 
                 for link in self
@@ -201,9 +210,9 @@ impl GameToy {
                             GameToyError::BindInputTextureFailed(node_mut.get_name().clone(), e)
                         })?;
                 }
-                node_mut.bind(&self.gl, &self.quad, &self.game_state);
+                node_mut.bind(gl, &self.quad, &self.game_state);
 
-                self.gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+                gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
             }
         }
 
@@ -217,10 +226,10 @@ impl GameToy {
     pub fn resize(&mut self, x_pixels: u32, y_pixels: u32) {
         self.resolution = [x_pixels as i32, y_pixels as i32];
 
-        for node in self.nodes.iter() {
-            node.borrow_mut()
-                .update_resolution(&self.gl, &self.resolution);
-        }
+        //for node in self.nodes.iter() {
+        //    node.borrow_mut()
+        //        .update_resolution(gl, &self.resolution);
+        //}
     }
 
     /// Used for keyboard input into GameToy.

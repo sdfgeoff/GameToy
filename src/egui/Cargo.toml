@@ -1,0 +1,52 @@
+[package]
+name = "egui"
+version = "0.14.0"
+authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+description = "Simple, portable immediate mode GUI library for Rust"
+edition = "2018"
+homepage = "https://github.com/emilk/egui"
+license = "MIT OR Apache-2.0"
+readme = "../README.md"
+repository = "https://github.com/emilk/egui"
+categories = ["gui", "game-development"]
+keywords = ["gui", "imgui", "immediate", "portable", "gamedev"]
+include = [
+  "../LICENSE-APACHE",
+  "../LICENSE-MIT",
+  "**/*.rs",
+  "Cargo.toml",
+]
+
+[lib]
+
+[dependencies]
+epaint = { version = "0.14.0", path = "../epaint", default-features = false }
+serde = { version = "1", features = ["derive", "rc"], optional = true }
+ron = { version = "0.6.4", optional = true }
+
+[features]
+default = ["default_fonts", "single_threaded"]
+
+# If set, egui will use `include_bytes!` to bundle some fonts.
+# If you plan on specifying your own fonts you may disable this feature.
+default_fonts = ["epaint/default_fonts"]
+
+# Enable additional checks if debug assertions are enabled (debug builds).
+extra_debug_asserts = ["epaint/extra_debug_asserts"]
+# Always enable additional checks.
+extra_asserts = ["epaint/extra_asserts"]
+
+# Add compatability with https://github.com/kvark/mint
+mint = ["epaint/mint"]
+
+# add compatibility with https://crates.io/crates/cint
+cint = ["epaint/cint"]
+
+persistence = ["serde", "epaint/persistence", "ron"]
+
+# Only needed if you plan to use the same egui::Context from multiple threads.
+single_threaded = ["epaint/single_threaded"]
+multi_threaded = ["epaint/multi_threaded"]
+
+[dev-dependencies]
+serde_json = "1"

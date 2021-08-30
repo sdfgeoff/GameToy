@@ -4,4 +4,10 @@ members = [
     "webpage",
     "desktop",
     "graph_editor",
+    "egui_nodes",
 ]
+
+[patch.crates-io]
+egui_glow = { path="./egui_glium" }
+egui = { path="./egui" }
+eframe = { path="./eframe" }

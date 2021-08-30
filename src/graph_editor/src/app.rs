@@ -135,7 +135,8 @@ impl epi::App for GametoyGraphEditor {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>, 
+    gl: &glow::Context) {
         //let mut new_proj = self.state.project_data.clone();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -242,8 +243,6 @@ impl epi::App for GametoyGraphEditor {
             });
         });
 
-
-
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
             match &self.state.ui_state.ui_layout_mode {
@@ -287,10 +286,25 @@ impl epi::App for GametoyGraphEditor {
                 }
             }
         });
+
+        if let Some(gametoy) = &mut self.state.gametoy_instance {
+            match gametoy {
+                Ok(gametoy) => {
+                    gametoy.render(gl, 0.0);
+
+                },
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
+            
+        } else {
+            self.reactor.queue_operation(StateOperation::CompileGametoy);
+        }
         
         self.reactor.queue_operation(StateOperation::RemoveInvalidLinks);
         let old_project_state = self.state.project_data.clone();
-        self.reactor.react(&mut self.state);
+        self.reactor.react(&mut self.state, gl);
         if old_project_state != self.state.project_data {
             self.dirty = true
         }
