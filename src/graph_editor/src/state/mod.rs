@@ -191,6 +191,10 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                 todo!("Implement destruction of gametoy");
             }
             let instance = create_gametoy_instance(&state.project_data, gl);
+            unsafe {
+                use glow::HasContext;
+                gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+            }
             state.gametoy_instance = Some(instance);
         }
     }
@@ -225,6 +229,6 @@ fn create_gametoy_instance(project_data: &ProjectData, gl: &glow::Context) -> Re
     let tarchive = gametoy::tar::Archive::new(tardata.as_slice());
 
 
-    gametoy::GameToy::new(gl, tarchive)
+    gametoy::GameToy::new(gl, tarchive, false)
     //Err(gametoy::GameToyError::DuplicateNodeName("DuplicateNodeName".to_string()))
 }

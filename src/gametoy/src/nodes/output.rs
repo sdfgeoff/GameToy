@@ -95,4 +95,12 @@ impl node::Node for Output {
             Err(node::NodeError::NoSuchInputTexture(name.clone()))
         }
     }
+
+    fn get_input_texture(&self, name: &String) -> Result<Option<glow::Texture>, node::NodeError> {
+        if name == Self::INPUT_BUFFER_NAME {
+            Ok(self.output_texture)
+        } else {
+            Err(node::NodeError::NoSuchInputTexture(name.clone()))
+        }
+    }
 }

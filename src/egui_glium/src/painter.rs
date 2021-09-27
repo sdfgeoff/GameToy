@@ -248,6 +248,45 @@ impl Painter {
         gl.bind_vertex_array(Some(self.va));
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.vb));
         gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.eb));
+
+
+
+        gl.bind_vertex_array(Some(self.va));
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.vb));
+        gl.vertex_attrib_pointer_f32(
+            0,
+            2,
+            glow::FLOAT,
+            false,
+            std::mem::size_of::<Vertex>() as i32,
+            0,
+        );
+        gl.enable_vertex_attrib_array(0);
+        gl.vertex_attrib_pointer_f32(
+            2,
+            2,
+            glow::FLOAT,
+            false,
+            std::mem::size_of::<Vertex>() as i32,
+            2 * std::mem::size_of::<f32>() as i32,
+        );
+        gl.enable_vertex_attrib_array(2);
+        gl.vertex_attrib_pointer_f32(
+            1,
+            4,
+            glow::UNSIGNED_BYTE,
+            false,
+            std::mem::size_of::<Vertex>() as i32,
+            4 * std::mem::size_of::<f32>() as i32,
+        );
+        gl.enable_vertex_attrib_array(1);
+
+
+
+
+
+
+
         (width_in_pixels, height_in_pixels)
     }
 

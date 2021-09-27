@@ -209,6 +209,39 @@ impl epi::App for GametoyGraphEditor {
         });
 
 
+
+        let mut outp_tex = None;
+
+        if let Some(gametoy) = &mut self.state.gametoy_instance {
+            match gametoy {
+                Ok(gametoy) => {
+                    gametoy.render(gl, 0.0);
+                    use std::any::Any;
+
+                    if let Some(output_ref) = &gametoy.output_node_maybe {
+                        let input_tex = output_ref.borrow().get_input_texture(&gametoy::nodes::Output::INPUT_BUFFER_NAME.to_string());
+                        if let Ok(tex) = input_tex{
+                            outp_tex = tex.clone();
+                        }
+                        
+                    }
+                    unsafe {
+                        use glow::HasContext;
+                        gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+                    }
+
+                },
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
+        } else {
+            self.reactor.queue_operation(StateOperation::CompileGametoy);
+        }
+
+
+
+
         egui::SidePanel::right("right_side_panel").default_width(300.0).show(ctx, |ui| {
             // Top is taken up by an image
             let scroll_area = egui::ScrollArea::auto_sized();
@@ -219,8 +252,15 @@ impl epi::App for GametoyGraphEditor {
                 if render_size != self.state.game_play_state.render_size {
                     self.reactor.queue_operation(StateOperation::SetGameRenderSize(render_size));
                 }
+                let texture_id = match outp_tex{
+                    Some(tex) => {
+                        // ctx.debug_painter().register_glow_texture(tex)
+                        egui::TextureId::Egui
+                    },
+                    None => egui::TextureId::Egui,
+                };
 
-                ui.add(egui::Image::new(egui::TextureId::Egui, [render_size[0] as f32, render_size[1] as f32]));
+                ui.add(egui::Image::new(texture_id, [render_size[0] as f32, render_size[1] as f32]));
                 
                 ui.horizontal(|ui| {
                     ui.label(format!("{} x {}", render_size[0], render_size[1]));
@@ -242,6 +282,8 @@ impl epi::App for GametoyGraphEditor {
                 });
             });
         });
+
+
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
@@ -287,20 +329,6 @@ impl epi::App for GametoyGraphEditor {
             }
         });
 
-        if let Some(gametoy) = &mut self.state.gametoy_instance {
-            match gametoy {
-                Ok(gametoy) => {
-                    gametoy.render(gl, 0.0);
-
-                },
-                Err(err) => {
-                    println!("{:?}", err);
-                }
-            }
-            
-        } else {
-            self.reactor.queue_operation(StateOperation::CompileGametoy);
-        }
         
         self.reactor.queue_operation(StateOperation::RemoveInvalidLinks);
         let old_project_state = self.state.project_data.clone();

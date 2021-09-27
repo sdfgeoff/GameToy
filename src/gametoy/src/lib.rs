@@ -52,12 +52,14 @@ pub struct GameToy {
     links: HashMap<String, Vec<Link>>,
 
     pub output_node_maybe: Option<NodeRef>,
+    enable_output: bool,
 
     resolution: [i32; 2],
+    resolution_dirty: bool,
 }
 
 impl GameToy {
-    pub fn new<R>(gl: &glow::Context, data: tar::Archive<R>) -> Result<Self, GameToyError>
+    pub fn new<R>(gl: &glow::Context, data: tar::Archive<R>, enable_output: bool) -> Result<Self, GameToyError>
     where
         R: Read,
     {
@@ -140,17 +142,21 @@ impl GameToy {
             })
         }
 
-        //unsafe {
-        //    gl.clear_color(0.0, 1.0, 1.0, 1.0);
-        //}
+        if enable_output {
+            unsafe {
+                gl.clear_color(0.0, 1.0, 1.0, 1.0);
+            }
+        }
 
         Ok(Self {
             game_state: GameState::new(),
             quad,
             nodes,
             links,
+            enable_output,
             output_node_maybe,
             resolution: [1920, 1080],
+            resolution_dirty: false,
         })
     }
 
@@ -161,13 +167,22 @@ impl GameToy {
     pub fn render(&mut self, gl: &glow::Context, time_since_unix_epoch: f64) -> Result<(), GameToyError> {
         self.game_state.update_times(time_since_unix_epoch);
 
+        if self.resolution_dirty {
+            for node in self.nodes.iter() {
+                node.borrow_mut()
+                    .update_resolution(gl, &self.resolution);
+            }
+            println!("Updating resolution {:?}", self.resolution);
+            self.resolution_dirty = false;
+        }
+
         unsafe {
             // Render all of the various passes
             for node in &self.nodes {
                 if let Some(outnode) = &self.output_node_maybe {
-                    if Rc::ptr_eq(node, outnode) {
-                        continue;
-                    }
+                   if !self.enable_output && Rc::ptr_eq(node, outnode) {
+                       continue;
+                   }
                 }
                 let mut node_mut = node.borrow_mut();
 
@@ -225,11 +240,8 @@ impl GameToy {
     // Sets the size to render at
     pub fn resize(&mut self, x_pixels: u32, y_pixels: u32) {
         self.resolution = [x_pixels as i32, y_pixels as i32];
-
-        //for node in self.nodes.iter() {
-        //    node.borrow_mut()
-        //        .update_resolution(gl, &self.resolution);
-        //}
+        self.resolution_dirty = true;
+        
     }
 
     /// Used for keyboard input into GameToy.

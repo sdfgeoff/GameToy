@@ -44,7 +44,7 @@ impl App {
         log("[OK] Got Tar");
 
         See https://github.com/emilk/egui/issues/93
-        let toy = gametoy::GameToy::new(gl, tar).expect("Failed to create toy");
+        let toy = gametoy::GameToy::new(gl, tar, true).expect("Failed to create toy");
 
         Self { canvas, toy }
     }

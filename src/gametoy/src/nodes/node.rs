@@ -1,4 +1,5 @@
 use glow::Texture;
+use std::any::Any;
 
 #[derive(Debug)]
 pub enum NodeError {
@@ -33,7 +34,7 @@ pub enum NodeError {
     ShaderError(crate::shader::ShaderError),
 }
 
-pub trait Node {
+pub trait Node: Any {
     /// Returns the name of this node
     fn get_name(&self) -> &String;
 
@@ -51,6 +52,12 @@ pub trait Node {
 
     /// Sets the input texture. If there is no texture with the name, it returns the NodeError::NoSuchInputTexture error
     fn set_input_texture(&mut self, name: &String, texture: Texture) -> Result<(), NodeError>;
+
+    /// Retrieves the current input texture. This is useful for external programs trying to get insight into
+    /// gametoy (such as the editor)
+    fn get_input_texture(&self, name: &String) -> Result<Option<Texture>, NodeError> {
+        unimplemented!()
+    }
 
     /// If a node has it's own output connected to it's own input (aka self-referential), then some
     /// nodes will need to take special action (eg double buffering). This function is called after
