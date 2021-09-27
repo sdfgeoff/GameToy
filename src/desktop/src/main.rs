@@ -38,7 +38,18 @@ fn main() {
         (gl, window, event_loop)
     };
 
-    let mut toy = gametoy::GameToy::new(&gl, tar, true).expect("Failed to create toy");
+    let mut toy = match gametoy::GameToy::new(&gl, tar, true) {
+        Ok(toy) => toy,
+        Err(gametoy::GameToyError::NodeCreateError(nodename, gametoy::nodes::NodeError::ShaderError(gametoy::shader::ShaderError::ShaderCompileError{shader_type: _, compiler_output: err}))) => {
+            println!("Error creating node: \"{}\"\n\n {}", nodename, err);
+            return;
+        }
+        Err(err) => {
+            println!("{:?}", err);
+            return;
+        }
+        
+    };
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;

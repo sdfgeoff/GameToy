@@ -11,7 +11,7 @@ pub mod config_file;
 pub mod gamedata;
 pub mod nodes;
 mod quad;
-mod shader;
+pub mod shader;
 
 mod gamestate;
 
