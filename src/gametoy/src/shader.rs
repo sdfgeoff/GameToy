@@ -7,6 +7,7 @@ pub enum ShaderError {
     ShaderCompileError {
         shader_type: u32,
         compiler_output: String,
+        shader_text: String,
     },
     ShaderLinkError(String),
 }
@@ -51,10 +52,10 @@ unsafe fn load_shader(
     if !gl.get_shader_compile_status(shader) {
         let compiler_output = gl.get_shader_info_log(shader);
         gl.delete_shader(shader);
-        println!("{}", shader_text);
         return Err(ShaderError::ShaderCompileError {
             shader_type,
             compiler_output: compiler_output,
+            shader_text: shader_text.to_string(),
         });
     }
     Ok(shader)

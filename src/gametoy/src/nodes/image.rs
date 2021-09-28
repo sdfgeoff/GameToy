@@ -41,7 +41,7 @@ impl Image {
         let tex_format = match reader.output_color_type() {
             (ColorType::RGB, BitDepth::Eight) => OutputBufferFormat::RGB8,
             (ColorType::RGB, BitDepth::Sixteen) => OutputBufferFormat::RGBA16UI,
-            (ColorType::RGBA, BitDepth::Eight) => OutputBufferFormat::RGB8,
+            (ColorType::RGBA, BitDepth::Eight) => OutputBufferFormat::RGBA8,
             (ColorType::RGBA, BitDepth::Sixteen) => OutputBufferFormat::RGBA16UI,
             (ColorType::Grayscale, BitDepth::Eight) => OutputBufferFormat::R8,
             (ColorType::Grayscale, BitDepth::Sixteen) => OutputBufferFormat::R16UI,
@@ -62,22 +62,22 @@ impl Image {
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MAG_FILTER,
-                glow::NEAREST as i32,
+                glow::LINEAR as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MIN_FILTER,
-                glow::NEAREST as i32,
+                glow::LINEAR as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_WRAP_S,
-                glow::CLAMP_TO_EDGE as i32,
+                glow::REPEAT as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_WRAP_T,
-                glow::CLAMP_TO_EDGE as i32,
+                glow::REPEAT as i32,
             );
 
             gl.tex_sub_image_2d(
