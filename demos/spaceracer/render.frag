@@ -1,12 +1,13 @@
 
-#define CHANNEL_STATE iChannel0
-#define CHANNEL_SPRITES iChannel1
-#define CHANNEL_SPRITES_RESOLUTION iChannelResolution[1].xy
+// #define CHANNEL_STATE iChannel0
+// #define CHANNEL_SPRITES iChannel1
+// #define CHANNEL_SPRITES_RESOLUTION iChannelResolution[1].xy
 
-#define CHANNEL_TRAILS iChannel2
-#define CHANNEL_TRAILS_RESOLUTION iChannelResolution[2].xy
+// #define CHANNEL_TRAILS iChannel2
+// #define CHANNEL_TRAILS_RESOLUTION iChannelResolution[2].xy
 
 //#define SHOW_SPRITE_BUFFER
+//#define SHOW_MAP_BUFFER
 //#define SHOW_STATE_BUFFER
 //#define SHOW_TRAILS_BUFFER
 
@@ -50,7 +51,7 @@ vec4 fetch_sprite(ivec2 tile_id, vec2 uv) {
     }
     uv = uv * 0.5 + 0.5 + vec2(tile_id);
     uv = uv * SPRITE_SIZE; // Convert to pixels;
-    uv.y += MAP_SIZE.y;
+    // uv.y += MAP_SIZE.y;
     uv /= CHANNEL_SPRITES_RESOLUTION; // Convert back to UV;
     return texture(CHANNEL_SPRITES, uv);
 }
@@ -87,7 +88,7 @@ vec4 draw_start_box(vec2 world_coords) {
 
 
 float draw_map(vec2 world_coords, float line_width) {
-    vec4 raw = sample_map(CHANNEL_SPRITES, CHANNEL_SPRITES_RESOLUTION, world_coords);
+    vec4 raw = sample_map(CHANNEL_MAP, CHANNEL_MAP_RESOLUTION, world_coords);
     
     float edge_sdf = abs(raw.z) / line_width;
     
@@ -137,7 +138,7 @@ vec4 draw_ship(vec2 world_coords, ship_t ship, vec4 color) {
 
 
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void main()
 {   
     
     vec2 uv = fragCoord/iResolution.xy;
@@ -219,6 +220,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 #endif
 #ifdef SHOW_TRAILS_BUFFER
     fragColor = texture(CHANNEL_TRAILS, uv);
+#endif
+#ifdef SHOW_MAP_BUFFER
+    fragColor = texture(CHANNEL_MAP, uv);
 #endif
 
 }

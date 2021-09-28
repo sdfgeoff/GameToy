@@ -1,12 +1,4 @@
 // Contains gameplay state
-#define CHANNEL_STATE iChannel0
-#define CHANNEL_SPRITES iChannel1
-#define CHANNEL_KEYS iChannel2
-
-const float PI = 3.14159;
-
-#define CHANNEL_SPRITES_RESOLUTION iChannelResolution[1].xy
-
 
 float get_key(int key_code) {
     return texelFetch(CHANNEL_KEYS, ivec2(key_code,0), 0).x;
@@ -25,16 +17,16 @@ float wrap_angle(float angle) {
 }
 
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
+void main()
 {
     ivec2 address = ivec2(fragCoord);
     
     if (address == A_SHIP_1 || address == A_SHIP_2 || address == A_SHIP_3 || address == A_SHIP_4) {
         // Data about the ship: Texture sample 1
-        ship_t ship = unpack_ship(read_data(iChannel0, address));
+        ship_t ship = unpack_ship(read_data(CHANNEL_STATE, address));
         
         // Data about what is underneath the ship: Texture sample 2
-        vec4 map_data = sample_map(CHANNEL_SPRITES, CHANNEL_SPRITES_RESOLUTION, ship.position.xy);
+        vec4 map_data = sample_map(CHANNEL_MAP, CHANNEL_MAP_RESOLUTION, ship.position.xy);
         
         
         if (iTime < STARTING_DELAY) {
@@ -55,8 +47,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             fragColor = pack_ship(ship);
             return;
         }
-        
-        
         
         float c = cos(ship.position.z);
         float s = sin(ship.position.z);

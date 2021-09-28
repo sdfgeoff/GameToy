@@ -1,3 +1,8 @@
+const float PI = 3.14159;
+const vec2 CHANNEL_SPRITES_RESOLUTION = vec2(512.0, 512.0);
+const vec2 CHANNEL_TRAILS_RESOLUTION = vec2(512.0, 256);
+const vec2 CHANNEL_MAP_RESOLUTION = vec2(256.0, 128.0);
+
 /////////////// GAMEPLAY SETTINGS //////////////////
 
 const float STARTING_DELAY = 3.0; // Time at start before race begins
@@ -104,6 +109,31 @@ ship_t unpack_ship(vec4 data) {
     );
 }
 
+/////////////// DRAWING FUNCTIONS ////////////////
+
+vec2 line_segment(vec2 point, vec2 segment_start, vec2 segment_end) {
+    // Returns a vector pointing to the line segment.
+    vec2 line_direction = segment_start - segment_end;
+    vec2 point_on_line = segment_end;
+    float segment_length = length(line_direction);
+
+
+    float projected_distance = dot(normalize(line_direction), point - point_on_line);
+    vec2 closest_point = point_on_line + projected_distance * line_direction / segment_length;
+
+    float distance_from_end = -projected_distance;
+    float distance_from_start = projected_distance - segment_length;
+
+    // Rounded caps on segment
+    if (distance_from_start > 0.0) {
+        closest_point = segment_start;
+    }
+    if (distance_from_end > 0.0) {
+        closest_point = segment_end;
+    }
+
+    return point - closest_point;
+}
 
 ////////////// SAMPLING FUNCTIONS ////////////////
 /* Data stored in the buffers often has transforms
