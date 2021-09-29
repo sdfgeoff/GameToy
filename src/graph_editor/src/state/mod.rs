@@ -120,6 +120,14 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
             let num_nodes = state.project_data.config_file.graph.nodes.len();
             if node_id_1 < num_nodes && node_id_2 < num_nodes {
                 state.project_data.config_file.graph.nodes.swap(node_id_1, node_id_2);
+                let node_pos_1 = state.ui_state.node_context.get_node_pos_screen_space(node_id_1);
+                let node_pos_2 = state.ui_state.node_context.get_node_pos_screen_space(node_id_2);
+                if let Some(pos) = node_pos_1 {
+                    state.ui_state.node_context.set_node_pos_screen_space(node_id_2, pos);
+                }
+                if let Some(pos) = node_pos_2 {
+                    state.ui_state.node_context.set_node_pos_screen_space(node_id_1, pos);
+                }
             } else {
                 println!("Warn: unable to swap");
             }
