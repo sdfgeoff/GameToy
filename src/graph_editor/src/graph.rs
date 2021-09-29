@@ -3,6 +3,9 @@ use egui_nodes::{Context, LinkArgs, NodeConstructor};
 use gametoy::config_file::ConfigFile;
 use std::collections::HashMap;
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use crate::nodes::{get_input_slots, get_node_name, get_output_slots};
 
 pub fn draw_rendergraph_editor(
@@ -80,10 +83,12 @@ pub fn draw_rendergraph_editor(
     // add them to the ui
     node_context.show(
         nodes,
-        links
-            .iter()
-            .enumerate()
-            .map(|(i, (start, end))| (i, *start, *end, LinkArgs::default())),
+        links.iter().enumerate().map(|(i, (start, end))| {
+            let color = pin_id_to_color(*start);
+            let mut args = LinkArgs::default();
+            args.base = Some(color);
+            (i, *start, *end, args)
+        }),
         ui,
     );
 
@@ -144,4 +149,12 @@ fn unpairing_function(z: usize) -> (usize, usize) {
     } else {
         (z - sqz, sqrtz)
     }
+}
+
+fn pin_id_to_color(pin_id: usize) -> egui::Color32 {
+    let mut s = DefaultHasher::new();
+    pin_id.hash(&mut s);
+    let hash = s.finish().to_le_bytes();
+
+    egui::Color32::from_rgb(hash[0], hash[1], 255)
 }
