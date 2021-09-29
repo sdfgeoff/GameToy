@@ -13,7 +13,6 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
         .on_hover_text("Name of the node");
     ui.end_row();
     ui.separator();
-    ui.separator();
     ui.end_row();
 
     ui.label("Scaling Mode:");
@@ -23,7 +22,6 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
     ui.label("Execution Mode:");
     execution_mode_widget(ui, &mut node.execution_mode);
     ui.end_row();
-    ui.separator();
     ui.separator();
     ui.end_row();
 
@@ -42,7 +40,6 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
         }
     });
     ui.end_row();
-    ui.separator();
     ui.separator();
     ui.end_row();
 
@@ -69,7 +66,6 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
         }
     });
     ui.end_row();
-    ui.separator();
     ui.separator();
     ui.end_row();
 
