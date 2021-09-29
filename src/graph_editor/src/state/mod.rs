@@ -136,18 +136,59 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
             // TODO: Bounds check and check for the name changing
             {
                 let old_node_data = &state.project_data.config_file.graph.nodes[node_id];
-                let old_node_name = crate::nodes::get_node_name(&old_node_data);
                 let new_node_name = crate::nodes::get_node_name(&new_node_data);
 
-                for link in state.project_data.config_file.graph.links.iter_mut() {
-                    if link.start_node == old_node_name {
-                        link.start_node = new_node_name.to_string();
+                {
+                    // Changing Node Names
+                    let old_node_name = crate::nodes::get_node_name(&old_node_data);
+                    if old_node_name != new_node_name {
+                        for link in state.project_data.config_file.graph.links.iter_mut() {
+                            if link.start_node == old_node_name {
+                                link.start_node = new_node_name.to_string();
+                            }
+                            if link.end_node == old_node_name {
+                                link.end_node = new_node_name.to_string();
+                            }
+                        }
                     }
-                    if link.end_node == old_node_name {
-                        link.end_node = new_node_name.to_string();
-                    }
-                    // TODO: Check for link names changing as well
                 }
+
+
+                {
+                    // Changing Output Link Names
+                    let old_link_names = crate::nodes::get_output_slots(&old_node_data);
+                    let new_link_names = crate::nodes::get_output_slots(&new_node_data);
+                    if old_link_names.len() == new_link_names.len() {
+                        for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
+                            if old != new {
+                                for link in state.project_data.config_file.graph.links.iter_mut() {
+                                    if link.start_node == new_node_name && &link.start_output_slot == old {
+                                        link.start_output_slot = new.to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                {
+                    // Changing Input Link Names
+                    let old_link_names = crate::nodes::get_input_slots(&old_node_data);
+                    let new_link_names = crate::nodes::get_input_slots(&new_node_data);
+                    if old_link_names.len() == new_link_names.len() {
+                        for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
+                            if old != new {
+                                for link in state.project_data.config_file.graph.links.iter_mut() {
+                                    if link.end_node == new_node_name && &link.end_input_slot == old {
+                                        link.end_input_slot = new.to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+
             }
             state.project_data.config_file.graph.nodes[node_id] = new_node_data
         }

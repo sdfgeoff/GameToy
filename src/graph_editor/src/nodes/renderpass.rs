@@ -53,7 +53,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        path_widget(&mut input_config.name, ui);
+                        ui.text_edit_singleline(&mut input_config.name);
                         ui.end_row();
                     });
             },
@@ -79,7 +79,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        path_widget(&mut output_config.name, ui);
+                        ui.text_edit_singleline(&mut output_config.name);
                         ui.end_row();
                         ui.label("Format:");
                         output_buffer_format_selector(ui, &mut output_config.format, item_id);
