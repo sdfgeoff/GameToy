@@ -1,6 +1,6 @@
 use gametoy::config_file::{ConfigFile, Link, MetaData, Node};
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub mod templates;
 
@@ -18,9 +18,8 @@ impl Default for UiLayoutMode {
 
 pub struct GamePlayState {
     // pub playing: bool,
-    pub render_size: [u32;2],
+    pub render_size: [u32; 2],
 }
-
 
 #[derive(Default)]
 pub struct UiState {
@@ -32,7 +31,7 @@ pub struct UiState {
 #[derive(Clone, PartialEq)]
 pub struct ProjectData {
     pub config_file: ConfigFile,
-    pub files: HashMap<String, Vec<u8>>
+    pub files: HashMap<String, Vec<u8>>,
 }
 
 pub struct EditorState {
@@ -61,7 +60,7 @@ pub enum StateOperation {
     CreateLink(Link),
     DeleteLink(usize),
     RemoveInvalidLinks,
-    SetGameRenderSize([u32;2]),
+    SetGameRenderSize([u32; 2]),
     SetUiLayoutMode(UiLayoutMode),
     WriteToFile(String, Vec<u8>),
     CompileGametoy,
@@ -102,7 +101,12 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
         StateOperation::SelectNode(node_id) => {
             state.ui_state.selected_node_id = node_id;
             if let Some(id) = node_id {
-                if !state.ui_state.node_context.selected_node_indices.contains(&id) {
+                if !state
+                    .ui_state
+                    .node_context
+                    .selected_node_indices
+                    .contains(&id)
+                {
                     state.ui_state.node_context.selected_node_indices = vec![id];
                 }
             }
@@ -119,14 +123,31 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
         StateOperation::SwapNodes(node_id_1, node_id_2) => {
             let num_nodes = state.project_data.config_file.graph.nodes.len();
             if node_id_1 < num_nodes && node_id_2 < num_nodes {
-                state.project_data.config_file.graph.nodes.swap(node_id_1, node_id_2);
-                let node_pos_1 = state.ui_state.node_context.get_node_pos_screen_space(node_id_1);
-                let node_pos_2 = state.ui_state.node_context.get_node_pos_screen_space(node_id_2);
+                state
+                    .project_data
+                    .config_file
+                    .graph
+                    .nodes
+                    .swap(node_id_1, node_id_2);
+                let node_pos_1 = state
+                    .ui_state
+                    .node_context
+                    .get_node_pos_screen_space(node_id_1);
+                let node_pos_2 = state
+                    .ui_state
+                    .node_context
+                    .get_node_pos_screen_space(node_id_2);
                 if let Some(pos) = node_pos_1 {
-                    state.ui_state.node_context.set_node_pos_screen_space(node_id_2, pos);
+                    state
+                        .ui_state
+                        .node_context
+                        .set_node_pos_screen_space(node_id_2, pos);
                 }
                 if let Some(pos) = node_pos_2 {
-                    state.ui_state.node_context.set_node_pos_screen_space(node_id_1, pos);
+                    state
+                        .ui_state
+                        .node_context
+                        .set_node_pos_screen_space(node_id_1, pos);
                 }
             } else {
                 println!("Warn: unable to swap");
@@ -153,7 +174,6 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                     }
                 }
 
-
                 {
                     // Changing Output Link Names
                     let old_link_names = crate::nodes::get_output_slots(&old_node_data);
@@ -162,7 +182,9 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                         for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
                             if old != new && !new_link_names.contains(old) {
                                 for link in state.project_data.config_file.graph.links.iter_mut() {
-                                    if link.start_node == new_node_name && &link.start_output_slot == old {
+                                    if link.start_node == new_node_name
+                                        && &link.start_output_slot == old
+                                    {
                                         link.start_output_slot = new.to_string();
                                     }
                                 }
@@ -179,7 +201,8 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                         for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
                             if old != new && !new_link_names.contains(old) {
                                 for link in state.project_data.config_file.graph.links.iter_mut() {
-                                    if link.end_node == new_node_name && &link.end_input_slot == old {
+                                    if link.end_node == new_node_name && &link.end_input_slot == old
+                                    {
                                         link.end_input_slot = new.to_string();
                                     }
                                 }
@@ -187,8 +210,6 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                         }
                     }
                 }
-
-
             }
             state.project_data.config_file.graph.nodes[node_id] = new_node_data
         }
@@ -200,28 +221,45 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
         }
         StateOperation::RemoveInvalidLinks => {
             // Ensure links are to existing slots/nodes:
-            let mut node_name_to_id: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-            for (node_id, node) in state.project_data.config_file.graph.nodes.iter().enumerate() {
+            let mut node_name_to_id: std::collections::HashMap<String, usize> =
+                std::collections::HashMap::new();
+            for (node_id, node) in state
+                .project_data
+                .config_file
+                .graph
+                .nodes
+                .iter()
+                .enumerate()
+            {
                 let node_name = crate::nodes::get_node_name(node);
                 node_name_to_id.insert(node_name.to_string(), node_id);
             }
 
             let graph_nodes = &state.project_data.config_file.graph.nodes;
 
-            state.project_data.config_file.graph.links.retain(|existing_link|{
-                if let Some(start_node_id) = node_name_to_id.get(&existing_link.start_node) {
-                    if let Some(end_node_id) = node_name_to_id.get(&existing_link.end_node) {
-                        let start_node = &graph_nodes[*start_node_id];
-                        if crate::nodes::get_output_slots(start_node).contains(&existing_link.start_output_slot) {
-                            let end_node = &graph_nodes[*end_node_id];
-                            if crate::nodes::get_input_slots(end_node).contains(&existing_link.end_input_slot) {
-                                return true;
+            state
+                .project_data
+                .config_file
+                .graph
+                .links
+                .retain(|existing_link| {
+                    if let Some(start_node_id) = node_name_to_id.get(&existing_link.start_node) {
+                        if let Some(end_node_id) = node_name_to_id.get(&existing_link.end_node) {
+                            let start_node = &graph_nodes[*start_node_id];
+                            if crate::nodes::get_output_slots(start_node)
+                                .contains(&existing_link.start_output_slot)
+                            {
+                                let end_node = &graph_nodes[*end_node_id];
+                                if crate::nodes::get_input_slots(end_node)
+                                    .contains(&existing_link.end_input_slot)
+                                {
+                                    return true;
+                                }
                             }
                         }
                     }
-                }
-                false
-            })
+                    false
+                })
         }
         StateOperation::SetGameRenderSize(size) => {
             state.game_play_state.render_size = size;
@@ -236,7 +274,7 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
 
         StateOperation::CompileGametoy => {
             // First we create a TAR of all the assets
-            if state.gametoy_instance.is_some(){
+            if state.gametoy_instance.is_some() {
                 todo!("Implement destruction of gametoy");
             }
             let instance = create_gametoy_instance(&state.project_data, gl);
@@ -249,9 +287,10 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
     }
 }
 
-
-fn create_gametoy_instance(project_data: &ProjectData, gl: &glow::Context) -> Result<gametoy::GameToy, gametoy::GameToyError> {
-
+fn create_gametoy_instance(
+    project_data: &ProjectData,
+    gl: &glow::Context,
+) -> Result<gametoy::GameToy, gametoy::GameToyError> {
     let mut tarfile = gametoy::tar::Builder::new(Vec::new());
 
     for (filename, filedata) in project_data.files.iter() {
@@ -259,24 +298,26 @@ fn create_gametoy_instance(project_data: &ProjectData, gl: &glow::Context) -> Re
         header.set_size(filedata.len() as u64);
         header.set_cksum();
 
-        tarfile.append_data(&mut header, filename, filedata.as_slice()).expect("Failed to pack into tar");
+        tarfile
+            .append_data(&mut header, filename, filedata.as_slice())
+            .expect("Failed to pack into tar");
     }
 
     {
-        let config_file_str = serde_json::to_string(&project_data.config_file).expect("Failed to serialize config file");
+        let config_file_str = serde_json::to_string(&project_data.config_file)
+            .expect("Failed to serialize config file");
         let config_file_bytes = config_file_str.as_bytes();
         let mut header = gametoy::tar::Header::new_gnu();
         header.set_size(config_file_bytes.len() as u64);
         header.set_cksum();
 
-        tarfile.append_data(&mut header, "data.json", config_file_bytes).expect("Failed to pack into tar");
-
+        tarfile
+            .append_data(&mut header, "data.json", config_file_bytes)
+            .expect("Failed to pack into tar");
     }
-    
 
     let tardata = tarfile.into_inner().expect("Failed to create archive");
     let tarchive = gametoy::tar::Archive::new(tardata.as_slice());
-
 
     gametoy::GameToy::new(gl, tarchive, false)
     //Err(gametoy::GameToyError::DuplicateNodeName("DuplicateNodeName".to_string()))

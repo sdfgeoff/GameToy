@@ -40,21 +40,31 @@ fn main() {
 
     let mut toy = match gametoy::GameToy::new(&gl, tar, true) {
         Ok(toy) => toy,
-        Err(gametoy::GameToyError::NodeCreateError(nodename, gametoy::nodes::NodeError::ShaderError(gametoy::shader::ShaderError::ShaderCompileError{shader_type: _, compiler_output, shader_text}))) => {
-            
+        Err(gametoy::GameToyError::NodeCreateError(
+            nodename,
+            gametoy::nodes::NodeError::ShaderError(
+                gametoy::shader::ShaderError::ShaderCompileError {
+                    shader_type: _,
+                    compiler_output,
+                    shader_text,
+                },
+            ),
+        )) => {
             let lines = shader_text.split('\n');
             for (line_id, line_text) in lines.enumerate() {
                 println!("{:4} | {}", line_id + 1, line_text);
             }
-            
-            println!("Error creating node: \"{}\"\n\n{}", nodename, compiler_output);
+
+            println!(
+                "Error creating node: \"{}\"\n\n{}",
+                nodename, compiler_output
+            );
             return;
         }
         Err(err) => {
             println!("{:?}", err);
             return;
         }
-        
     };
 
     event_loop.run(move |event, _, control_flow| {

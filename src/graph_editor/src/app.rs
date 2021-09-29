@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use super::metadata;
 use super::nodes;
-use super::state;
 use super::render_order;
+use super::state;
 
 use super::state::{StateOperation, UiLayoutMode};
 
@@ -135,8 +135,7 @@ impl epi::App for GametoyGraphEditor {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>, 
-    gl: &glow::Context) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>, gl: &glow::Context) {
         //let mut new_proj = self.state.project_data.clone();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -178,14 +177,22 @@ impl epi::App for GametoyGraphEditor {
                 egui::CollapsingHeader::new("Metadata")
                     .default_open(true)
                     .show(ui, |ui| {
-                        metadata::draw_metadata(ui, &self.state.project_data.config_file.metadata, &mut self.reactor);
+                        metadata::draw_metadata(
+                            ui,
+                            &self.state.project_data.config_file.metadata,
+                            &mut self.reactor,
+                        );
                         ui.separator();
                     });
 
                 egui::CollapsingHeader::new("Render Order")
                     .default_open(true)
                     .show(ui, |ui| {
-                        render_order::render_order_widget(ui, &mut self.reactor, &self.state.project_data.config_file.graph.nodes);
+                        render_order::render_order_widget(
+                            ui,
+                            &mut self.reactor,
+                            &self.state.project_data.config_file.graph.nodes,
+                        );
                         ui.separator();
                     });
 
@@ -193,12 +200,19 @@ impl epi::App for GametoyGraphEditor {
                     .default_open(true)
                     .show(ui, |ui| {
                         match self.state.ui_state.selected_node_id {
-                            Some(id) => match self.state.project_data.config_file.graph.nodes.get(id) {
-                                Some(node) => {
-                                    nodes::draw_node_properties(ui, &mut self.reactor, node, id);
+                            Some(id) => {
+                                match self.state.project_data.config_file.graph.nodes.get(id) {
+                                    Some(node) => {
+                                        nodes::draw_node_properties(
+                                            ui,
+                                            &mut self.reactor,
+                                            node,
+                                            id,
+                                        );
+                                    }
+                                    None => {}
                                 }
-                                None => {}
-                            },
+                            }
                             None => {
                                 ui.label("Select a Node");
                             }
@@ -207,8 +221,6 @@ impl epi::App for GametoyGraphEditor {
                     })
             });
         });
-
-
 
         let mut outp_tex = None;
 
@@ -219,18 +231,18 @@ impl epi::App for GametoyGraphEditor {
                     use std::any::Any;
 
                     if let Some(output_ref) = &gametoy.output_node_maybe {
-                        let input_tex = output_ref.borrow().get_input_texture(&gametoy::nodes::Output::INPUT_BUFFER_NAME.to_string());
-                        if let Ok(tex) = input_tex{
+                        let input_tex = output_ref.borrow().get_input_texture(
+                            &gametoy::nodes::Output::INPUT_BUFFER_NAME.to_string(),
+                        );
+                        if let Ok(tex) = input_tex {
                             outp_tex = tex.clone();
                         }
-                        
                     }
                     unsafe {
                         use glow::HasContext;
                         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
                     }
-
-                },
+                }
                 Err(err) => {
                     println!("{:?}", err);
                 }
@@ -239,51 +251,63 @@ impl epi::App for GametoyGraphEditor {
             self.reactor.queue_operation(StateOperation::CompileGametoy);
         }
 
+        egui::SidePanel::right("right_side_panel")
+            .default_width(300.0)
+            .show(ctx, |ui| {
+                // Top is taken up by an image
+                let scroll_area = egui::ScrollArea::auto_sized();
+                scroll_area.show(ui, |ui| {
+                    let available_space = ui.available_size();
+                    let render_size = [
+                        (available_space.x) as u32,
+                        (available_space.x * 9.0 / 16.0) as u32,
+                    ];
 
-
-
-        egui::SidePanel::right("right_side_panel").default_width(300.0).show(ctx, |ui| {
-            // Top is taken up by an image
-            let scroll_area = egui::ScrollArea::auto_sized();
-            scroll_area.show(ui, |ui| {
-                let available_space = ui.available_size();
-                let render_size = [(available_space.x) as u32, (available_space.x * 9.0 / 16.0) as u32];
-
-                if render_size != self.state.game_play_state.render_size {
-                    self.reactor.queue_operation(StateOperation::SetGameRenderSize(render_size));
-                }
-                let texture_id = match outp_tex{
-                    Some(tex) => {
-                        // ctx.debug_painter().register_glow_texture(tex)
-                        egui::TextureId::Egui
-                    },
-                    None => egui::TextureId::Egui,
-                };
-
-                ui.add(egui::Image::new(texture_id, [render_size[0] as f32, render_size[1] as f32]));
-                
-                ui.horizontal(|ui| {
-                    ui.label(format!("{} x {}", render_size[0], render_size[1]));
-                });
-                
-                ui.separator();
-                ui.heading("Project Files:");
-                egui::Grid::new("project_file_grid")
-                .num_columns(2).striped(true).show(ui, |ui| {
-                    for filename in self.state.project_data.files.keys() {
-                        if ui.button(filename.to_string()).clicked() {
-                            self.reactor.queue_operation(StateOperation::SetUiLayoutMode(UiLayoutMode::TextEditor(filename.to_string())));
-                        };
-                        ui.end_row();
+                    if render_size != self.state.game_play_state.render_size {
+                        self.reactor
+                            .queue_operation(StateOperation::SetGameRenderSize(render_size));
                     }
-                    if ui.button("data.json").clicked() {
-                        self.reactor.queue_operation(StateOperation::SetUiLayoutMode(UiLayoutMode::GraphEditor));
-                    }
+                    let texture_id = match outp_tex {
+                        Some(tex) => {
+                            // ctx.debug_painter().register_glow_texture(tex)
+                            egui::TextureId::Egui
+                        }
+                        None => egui::TextureId::Egui,
+                    };
+
+                    ui.add(egui::Image::new(
+                        texture_id,
+                        [render_size[0] as f32, render_size[1] as f32],
+                    ));
+
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{} x {}", render_size[0], render_size[1]));
+                    });
+
+                    ui.separator();
+                    ui.heading("Project Files:");
+                    egui::Grid::new("project_file_grid")
+                        .num_columns(2)
+                        .striped(true)
+                        .show(ui, |ui| {
+                            for filename in self.state.project_data.files.keys() {
+                                if ui.button(filename.to_string()).clicked() {
+                                    self.reactor
+                                        .queue_operation(StateOperation::SetUiLayoutMode(
+                                            UiLayoutMode::TextEditor(filename.to_string()),
+                                        ));
+                                };
+                                ui.end_row();
+                            }
+                            if ui.button("data.json").clicked() {
+                                self.reactor
+                                    .queue_operation(StateOperation::SetUiLayoutMode(
+                                        UiLayoutMode::GraphEditor,
+                                    ));
+                            }
+                        });
                 });
             });
-        });
-
-
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
@@ -298,29 +322,31 @@ impl epi::App for GametoyGraphEditor {
                 }
                 UiLayoutMode::TextEditor(filename) => {
                     match self.state.project_data.files.get(filename) {
-                        Some(buffer) => {
-                            match String::from_utf8(buffer.clone()) {
-                                Ok(mut buffer) => {
-                                    let scroll_area = egui::ScrollArea::auto_sized();
-                                    let orig = buffer.clone();
-                                    scroll_area.show(ui, |ui| {
-                                        
-                                        let size = ui.available_size();
-                                        ui.add_sized(
-                                            size, 
-                                            egui::TextEdit::multiline(&mut buffer).code_editor().id_source(filename).desired_width(size.x)
-                                        );
-                                    });
-                                    if buffer != orig {
-                                        self.reactor.queue_operation(StateOperation::WriteToFile(filename.clone(), buffer.into_bytes()));
-                                    }
-                                },
-                                Err(err) => {
-                                    ui.label(format!("File not readable as utf-8: {}", err));
+                        Some(buffer) => match String::from_utf8(buffer.clone()) {
+                            Ok(mut buffer) => {
+                                let scroll_area = egui::ScrollArea::auto_sized();
+                                let orig = buffer.clone();
+                                scroll_area.show(ui, |ui| {
+                                    let size = ui.available_size();
+                                    ui.add_sized(
+                                        size,
+                                        egui::TextEdit::multiline(&mut buffer)
+                                            .code_editor()
+                                            .id_source(filename)
+                                            .desired_width(size.x),
+                                    );
+                                });
+                                if buffer != orig {
+                                    self.reactor.queue_operation(StateOperation::WriteToFile(
+                                        filename.clone(),
+                                        buffer.into_bytes(),
+                                    ));
                                 }
                             }
-                            
-                        }
+                            Err(err) => {
+                                ui.label(format!("File not readable as utf-8: {}", err));
+                            }
+                        },
                         None => {
                             ui.label("No File Selected");
                         }
@@ -329,8 +355,8 @@ impl epi::App for GametoyGraphEditor {
             }
         });
 
-        
-        self.reactor.queue_operation(StateOperation::RemoveInvalidLinks);
+        self.reactor
+            .queue_operation(StateOperation::RemoveInvalidLinks);
         let old_project_state = self.state.project_data.clone();
         self.reactor.react(&mut self.state, gl);
         if old_project_state != self.state.project_data {

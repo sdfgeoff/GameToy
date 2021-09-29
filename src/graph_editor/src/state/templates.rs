@@ -3,8 +3,12 @@
 //! Match any changes made to the config file format. If they were (for example)
 //! Creates using `parse(include_bytes!()` then they could fail.
 use super::{EditorState, GamePlayState, ProjectData};
+use gametoy::config_file::{
+    ConfigFile, ExecutionMode, GraphConfig, InputBufferConfig, KeyboardConfig, Link, MetaData,
+    Node, OutputBufferConfig, OutputBufferFormat, OutputConfig, RenderPassConfig,
+    ResolutionScalingMode,
+};
 use std::collections::HashMap;
-use gametoy::config_file::{ConfigFile, RenderPassConfig, KeyboardConfig, OutputBufferConfig, InputBufferConfig, OutputConfig, Node, Link, ResolutionScalingMode, GraphConfig, MetaData, OutputBufferFormat, ExecutionMode};
 
 // A single render pass with keyboard input
 pub fn simple_project() -> EditorState {
@@ -31,8 +35,7 @@ pub fn simple_project() -> EditorState {
                     input_texture_slots: vec![InputBufferConfig {
                         name: "KeyboardInput".to_string(),
                     }],
-                    resolution_scaling_mode:
-                        ResolutionScalingMode::ViewportScale(1.0, 1.0),
+                    resolution_scaling_mode: ResolutionScalingMode::ViewportScale(1.0, 1.0),
                     fragment_shader_paths: vec!["render.frag".to_string()],
                     execution_mode: ExecutionMode::Always,
                 }),
@@ -57,21 +60,21 @@ pub fn simple_project() -> EditorState {
         },
     };
     let mut files = HashMap::new();
-    files.insert("render.frag".to_string(), br#"void main(){RenderOut = vec3(1.0, 0.0, 1.0);}"#.to_vec());
-
+    files.insert(
+        "render.frag".to_string(),
+        br#"void main(){RenderOut = vec3(1.0, 0.0, 1.0);}"#.to_vec(),
+    );
 
     editor_state_from_config_and_files(config_file, files)
 }
 
-
-fn editor_state_from_config_and_files(config_file: ConfigFile, files: HashMap<String, Vec<u8>>) -> EditorState {
-
+fn editor_state_from_config_and_files(
+    config_file: ConfigFile,
+    files: HashMap<String, Vec<u8>>,
+) -> EditorState {
     EditorState {
         project_file: None,
-        project_data: ProjectData{
-            config_file,
-            files,
-        },
+        project_data: ProjectData { config_file, files },
         ui_state: Default::default(),
         game_play_state: GamePlayState {
             render_size: [640, 480],

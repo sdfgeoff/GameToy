@@ -59,7 +59,11 @@ pub struct GameToy {
 }
 
 impl GameToy {
-    pub fn new<R>(gl: &glow::Context, data: tar::Archive<R>, enable_output: bool) -> Result<Self, GameToyError>
+    pub fn new<R>(
+        gl: &glow::Context,
+        data: tar::Archive<R>,
+        enable_output: bool,
+    ) -> Result<Self, GameToyError>
     where
         R: Read,
     {
@@ -164,13 +168,16 @@ impl GameToy {
     // Requires the time as seconds past the unix epoch. Note that
     // if you pass this in as zero, the simulation will assume a frametime of
     // 60FPS.
-    pub fn render(&mut self, gl: &glow::Context, time_since_unix_epoch: f64) -> Result<(), GameToyError> {
+    pub fn render(
+        &mut self,
+        gl: &glow::Context,
+        time_since_unix_epoch: f64,
+    ) -> Result<(), GameToyError> {
         self.game_state.update_times(time_since_unix_epoch);
 
         if self.resolution_dirty {
             for node in self.nodes.iter() {
-                node.borrow_mut()
-                    .update_resolution(gl, &self.resolution);
+                node.borrow_mut().update_resolution(gl, &self.resolution);
             }
             println!("Updating resolution {:?}", self.resolution);
             self.resolution_dirty = false;
@@ -180,9 +187,9 @@ impl GameToy {
             // Render all of the various passes
             for node in &self.nodes {
                 if let Some(outnode) = &self.output_node_maybe {
-                   if !self.enable_output && Rc::ptr_eq(node, outnode) {
-                       continue;
-                   }
+                    if !self.enable_output && Rc::ptr_eq(node, outnode) {
+                        continue;
+                    }
                 }
                 let mut node_mut = node.borrow_mut();
 
@@ -241,7 +248,6 @@ impl GameToy {
     pub fn resize(&mut self, x_pixels: u32, y_pixels: u32) {
         self.resolution = [x_pixels as i32, y_pixels as i32];
         self.resolution_dirty = true;
-        
     }
 
     /// Used for keyboard input into GameToy.

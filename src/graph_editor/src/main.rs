@@ -3,8 +3,8 @@ mod graph;
 mod helpers;
 mod metadata;
 mod nodes;
-mod state;
 mod render_order;
+mod state;
 
 fn main() {
     let ap = app::GametoyGraphEditor::default();
