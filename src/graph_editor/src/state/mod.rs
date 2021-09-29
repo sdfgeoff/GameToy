@@ -160,7 +160,7 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                     let new_link_names = crate::nodes::get_output_slots(&new_node_data);
                     if old_link_names.len() == new_link_names.len() {
                         for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
-                            if old != new {
+                            if old != new && !new_link_names.contains(old) {
                                 for link in state.project_data.config_file.graph.links.iter_mut() {
                                     if link.start_node == new_node_name && &link.start_output_slot == old {
                                         link.start_output_slot = new.to_string();
@@ -177,7 +177,7 @@ pub fn perform_operation(state: &mut EditorState, operation: StateOperation, gl:
                     let new_link_names = crate::nodes::get_input_slots(&new_node_data);
                     if old_link_names.len() == new_link_names.len() {
                         for (old, new) in old_link_names.iter().zip(new_link_names.iter()) {
-                            if old != new {
+                            if old != new && !new_link_names.contains(old) {
                                 for link in state.project_data.config_file.graph.links.iter_mut() {
                                     if link.end_node == new_node_name && &link.end_input_slot == old {
                                         link.end_input_slot = new.to_string();
