@@ -6,6 +6,7 @@ use gametoy::config_file::{
 use super::execution_mode::execution_mode_widget;
 use super::output_buffer_format::output_buffer_format_selector;
 use super::resolution_scaling_mode::resolution_scaling_mode_widget;
+use egui::TextEdit;
 
 pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
     ui.label("Name:");
@@ -53,7 +54,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        ui.text_edit_singleline(&mut input_config.name);
+                        ui.add_sized([110.0, 20.0], TextEdit::singleline(&mut input_config.name));
                         ui.end_row();
                     });
             },
@@ -79,7 +80,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Name:");
-                        ui.text_edit_singleline(&mut output_config.name);
+                        ui.add_sized([110.0, 20.0], TextEdit::singleline(&mut output_config.name));
                         ui.end_row();
                         ui.label("Format:");
                         output_buffer_format_selector(ui, &mut output_config.format, item_id);
