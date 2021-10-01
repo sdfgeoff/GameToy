@@ -47,13 +47,23 @@ impl Image {
             (ColorType::Grayscale, BitDepth::Sixteen) => OutputBufferFormat::R16UI,
             (_, _) => unimplemented!("Unsupported PNG Pixel Type"),
         };
+        
 
         unsafe {
+            gl.active_texture(glow::TEXTURE1);
             gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
+
+            let levels = {
+                if config.generate_mipmap {
+                    (info.width as f32).log2().ceil() as i32
+                } else {
+                    1
+                }
+            };
 
             gl.tex_storage_2d(
                 glow::TEXTURE_2D,
-                1,
+                levels,
                 tex_format.to_sized_internal_format(),
                 info.width as i32,
                 info.height as i32,
@@ -62,12 +72,12 @@ impl Image {
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MAG_FILTER,
-                glow::LINEAR as i32,
+                glow::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MIN_FILTER,
-                glow::LINEAR as i32,
+                glow::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::REPEAT as i32);
             gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::REPEAT as i32);
@@ -83,6 +93,9 @@ impl Image {
                 tex_format.to_type(),
                 glow::PixelUnpackData::Slice(&buf),
             );
+            if levels > 1 {
+                gl.generate_mipmap(glow::TEXTURE_2D);
+            }
         }
 
         Ok(Self {

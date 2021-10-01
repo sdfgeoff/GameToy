@@ -17,6 +17,7 @@ extern "C" {
 pub struct App {
     canvas: HtmlCanvasElement,
     toy: gametoy::GameToy,
+    gl: glow::Context,
 }
 
 impl App {
@@ -44,9 +45,9 @@ impl App {
         log("[OK] Got Tar");
 
         // See https://github.com/emilk/egui/issues/93
-        let toy = gametoy::GameToy::new(gl, tar, true).expect("Failed to create toy");
+        let toy = gametoy::GameToy::new(&gl, tar, true).expect("Failed to create toy");
 
-        Self { canvas, toy }
+        Self { canvas, toy, gl }
     }
 
     fn check_resize(&mut self) {
@@ -75,7 +76,7 @@ impl App {
         self.check_resize();
 
         let time = Date::new_0().get_time() / 1000.0;
-        self.toy.render(time).expect("Failed to render toy");
+        self.toy.render(&self.gl, time).expect("Failed to render toy");
     }
 
     pub fn keydown_event(&mut self, event: KeyboardEvent) {

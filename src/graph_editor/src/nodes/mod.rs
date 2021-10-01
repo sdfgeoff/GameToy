@@ -31,6 +31,10 @@ pub fn draw_node_properties(
                 ui.label("Path:");
                 path_widget(&mut node.path, ui);
                 ui.end_row();
+
+                ui.label("Mipmap:");
+                ui.checkbox(&mut node.generate_mipmap, "");
+                ui.end_row();
             }
             Node::RenderPass(node) => {
                 renderpass::edit_render_pass(ui, node);

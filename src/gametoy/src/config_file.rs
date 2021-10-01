@@ -83,6 +83,10 @@ pub struct ImageConfig {
     /// the path to read the texture from
     pub name: String,
     pub path: String,
+
+    /// Generate mipmaps for this buffer
+    #[serde(default = "get_false")]
+    pub generate_mipmap: bool,
 }
 
 /// The node that actually writes to the screen
@@ -129,6 +133,10 @@ pub struct OutputBufferConfig {
 
     /// The texture format for the output buffer.
     pub format: OutputBufferFormat,
+
+    /// Generate mipmaps for this buffer
+    #[serde(default = "get_false")]
+    pub generate_mipmap: bool,
 }
 
 /// An input channel for a `RenderPass`
@@ -437,4 +445,10 @@ impl OutputBufferFormat {
             Self::RGBA32UI => 4,
         }
     }
+}
+
+
+/// Helper function for serde defaults
+fn get_false() -> bool{
+    false
 }

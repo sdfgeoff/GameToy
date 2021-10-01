@@ -85,6 +85,9 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
                         ui.label("Format:");
                         output_buffer_format_selector(ui, &mut output_config.format, item_id);
                         ui.end_row();
+                        ui.label("Mipmap:");
+                        ui.checkbox(&mut output_config.generate_mipmap, "");
+                        ui.end_row();
                     });
             },
             "output_texture_grid",
@@ -93,6 +96,7 @@ pub fn edit_render_pass(ui: &mut egui::Ui, node: &mut RenderPassConfig) {
             node.output_texture_slots.push(OutputBufferConfig {
                 name: String::new(),
                 format: OutputBufferFormat::RGBA32F,
+                generate_mipmap: false,
             });
         }
     });

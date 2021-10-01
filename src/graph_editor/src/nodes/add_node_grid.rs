@@ -9,6 +9,7 @@ pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut R
                 output_texture_slots: vec![gametoy::config_file::OutputBufferConfig {
                     name: "RenderOut".to_string(),
                     format: gametoy::config_file::OutputBufferFormat::RGB8,
+                    generate_mipmap: false,
                 }],
                 input_texture_slots: vec![gametoy::config_file::InputBufferConfig {
                     name: "KeyboardInput".to_string(),
@@ -27,6 +28,7 @@ pub fn add_node_widget(ui: &mut egui::Ui, node_list: &Vec<Node>, reactor: &mut R
             gametoy::config_file::Node::Image(gametoy::config_file::ImageConfig {
                 name: format!("Image {}", node_list.len()),
                 path: String::new(),
+                generate_mipmap: false,
             }),
         ));
     }

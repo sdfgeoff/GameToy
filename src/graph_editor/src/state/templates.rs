@@ -31,6 +31,7 @@ pub fn simple_project() -> EditorState {
                     output_texture_slots: vec![OutputBufferConfig {
                         name: "RenderOut".to_string(),
                         format: OutputBufferFormat::RGB8,
+                        generate_mipmap: false,
                     }],
                     input_texture_slots: vec![InputBufferConfig {
                         name: "KeyboardInput".to_string(),
