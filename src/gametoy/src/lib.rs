@@ -233,8 +233,8 @@ impl GameToy {
                         })?;
                 }
                 node_mut.bind(gl, &self.quad, &self.game_state);
-
                 gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+                node_mut.post_draw(gl, &self.game_state);
             }
         }
 

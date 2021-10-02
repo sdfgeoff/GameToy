@@ -42,6 +42,14 @@ pub trait Node: Any {
     /// node
     fn bind(&mut self, gl: &glow::Context, quad: &crate::quad::Quad, game_state: &crate::GameState);
 
+    /// Runs after a node has finished drawing, but before the next one is setup up.
+    fn post_draw(
+        &mut self,
+        _gl: &glow::Context, _game_state: &crate::GameState
+    ) -> Result<(), NodeError> {
+        Ok(())
+    }
+
     /// Run when the screen resolution has changed. This indicates that the node may
     /// need to update it's resolution as well.
     fn update_resolution(&mut self, gl: &glow::Context, screen_resolution: &[i32; 2]);

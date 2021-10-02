@@ -89,22 +89,22 @@ impl OutputTexture {
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MAG_FILTER,
-                glow::LINEAR as i32,
+                glow::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MIN_FILTER,
-                glow::LINEAR as i32,
+                glow::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_WRAP_S,
-                glow::CLAMP_TO_EDGE as i32,
+                glow::REPEAT as i32,
             );
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_WRAP_T,
-                glow::CLAMP_TO_EDGE as i32,
+                glow::REPEAT as i32,
             );
         }
 
@@ -129,6 +129,17 @@ impl OutputTexture {
                 self.config.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
                 None, // but we are passing in None here, so the above two values are ignored.
             );
+            gl.generate_mipmap(glow::TEXTURE_2D);
+        }
+    }
+
+    fn generate_mip(&self, gl: &glow::Context) {
+        if self.config.generate_mipmap {
+            unsafe {
+                gl.active_texture(glow::TEXTURE0);
+                gl.bind_texture(glow::TEXTURE_2D, Some(self.tex));
+                gl.generate_mipmap(glow::TEXTURE_2D);
+            }
         }
     }
 }
@@ -263,6 +274,20 @@ impl node::Node for RenderPass {
         self.frame = self.frame.overflowing_add(1).0;
     }
 
+    fn post_draw(&mut self, gl: &glow::Context, game_state: &GameState) -> Result<(), NodeError> {
+        if self.back_output_textures.is_some() && self.frame % 2 == 1  {
+            for outtex in self.back_output_textures.as_ref().unwrap().values() {
+                outtex.generate_mip(gl);
+            }
+        } else {
+            for outtex in self.output_textures.values() {
+                outtex.generate_mip(gl);
+            }
+        }
+        Ok(())
+
+    }
+
     fn update_resolution(&mut self, gl: &glow::Context, screen_resolution: &[i32; 2]) {
         match self.config.resolution_scaling_mode {
             config_file::ResolutionScalingMode::Fixed(_, _) => {}
@@ -377,6 +402,14 @@ fn create_framebuffer_and_textures(
         let attachment = color_attachment_int_to_gl(attachment_id as u32);
         buffers.push(attachment);
 
+        let levels = {
+            if output_texture_slot.generate_mipmap {
+                (resolution[0] as f32).log2().ceil() as i32
+            } else {
+                1
+            }
+        };
+
         unsafe {
             gl.bind_texture(glow::TEXTURE_2D, Some(output_tex.tex));
             match config.resolution_scaling_mode {
@@ -384,7 +417,7 @@ fn create_framebuffer_and_textures(
                     // We know this isn't going to change, so we can use tex_storage_2d
                     gl.tex_storage_2d(
                         glow::TEXTURE_2D,
-                        1,
+                        levels,
                         output_texture_slot.format.to_sized_internal_format(),
                         resolution[0],
                         resolution[1],
@@ -403,6 +436,7 @@ fn create_framebuffer_and_textures(
                         output_texture_slot.format.to_type(), // If we were passing in an existing image into data, this would be meaningful
                         None, // but we are passing in None here, so the above two values are ignored.
                     );
+                    gl.generate_mipmap(glow::TEXTURE_2D);
                 }
             }
 
