@@ -47,14 +47,7 @@ vec2 shadowSample(vec2 prev_sample, vec2 uv, float zoom, float mip) {
 
 void main(){
     
-    vec2 camera_position = vec2(3.0);
-    camera_position.x += sin(iTime);
-    
-    vec2 map_viewport = fragCoordUV * vec2(MAP_SIZE / 3) + camera_position;
-    vec2 background_viewport = fragCoordUV * vec2(MAP_SIZE / 2) + camera_position;
-    
-    
-    
+    vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 0.8);
     vec4 background = render_background(background_viewport, vec2(7.0));
     vec4 map = textureLod(BUFFER_MAP_SCREEN, fragCoordUV, 0.0);
     

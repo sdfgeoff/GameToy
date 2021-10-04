@@ -78,6 +78,7 @@ impl OutputTexture {
         gl: &glow::Context,
         config: &config_file::OutputBufferConfig,
     ) -> Result<Self, NodeError> {
+        
         let new_tex = unsafe {
             gl.create_texture()
                 .map_err(NodeError::CreateTextureFailed)?
@@ -89,8 +90,8 @@ impl OutputTexture {
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MAG_FILTER,
-                glow::LINEAR_MIPMAP_LINEAR as i32,
-            );
+                glow::LINEAR as i32,
+            ); 
             gl.tex_parameter_i32(
                 glow::TEXTURE_2D,
                 glow::TEXTURE_MIN_FILTER,
@@ -106,6 +107,8 @@ impl OutputTexture {
                 glow::TEXTURE_WRAP_T,
                 glow::REPEAT as i32,
             );
+
+            assert_eq!(gl.get_error(), glow::NO_ERROR);
         }
 
         Ok(Self {

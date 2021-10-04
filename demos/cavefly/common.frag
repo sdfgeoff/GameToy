@@ -5,11 +5,23 @@ const ivec2 MAP_SIZE = ivec2(14, 14);
 
 const ivec2 ADDR_RESET = ivec2(0,0);
 const ivec2 ADDR_MAP_SETTINGS = ivec2(1,0);
+const ivec2 ADDR_CAMERA_POSITION = ivec2(3,0);
 
 
 // Fetch a single pixel from the state buffer buffer
 vec4 read_data(sampler2D buffer, ivec2 address){
     return texelFetch(buffer, address, 0);
+}
+
+
+vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z) {
+    uv += 0.5;
+    uv.x *= iResolution.x / iResolution.y;
+    uv -= 0.5;
+    
+    vec4 cam_data = read_data(state_buffer, ADDR_CAMERA_POSITION);
+    uv = uv * cam_data.z / z + cam_data.xy;
+    return uv;
 }
 
 

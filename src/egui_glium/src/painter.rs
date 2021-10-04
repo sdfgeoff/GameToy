@@ -18,6 +18,8 @@ fn srgbtexture2d(
     assert!(w >= 1);
     assert!(h >= 1);
     unsafe {
+        assert_eq!(gl.get_error(), glow::NO_ERROR);
+        
         let tex = gl.create_texture().ok()?;
         gl.bind_texture(glow::TEXTURE_2D, Some(tex));
 

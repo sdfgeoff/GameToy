@@ -67,6 +67,10 @@ impl GameToy {
     where
         R: Read,
     {
+        unsafe {
+            assert_eq!(gl.get_error(), glow::NO_ERROR);
+        }
+
         let game_data = gamedata::GameData::from_tar(data).map_err(GameToyError::DataLoadError)?;
 
         let quad = quad::Quad::new(gl).map_err(GameToyError::QuadCreateError)?;
@@ -77,6 +81,7 @@ impl GameToy {
         let mut output_node_maybe = None;
 
         for node in game_data.config_file.graph.nodes.iter() {
+            println!("Setting up node {:?}", node);
             let new_node: NodeRef = match node {
                 config_file::Node::RenderPass(pass_config) => {
                     let new_pass =
@@ -103,6 +108,9 @@ impl GameToy {
                     Rc::new(RefCell::new(Box::new(image)))
                 }
             };
+            unsafe {
+                assert_eq!(gl.get_error(), glow::NO_ERROR);
+            }
             if links
                 .insert(new_node.borrow().get_name().clone(), vec![])
                 .is_some()
