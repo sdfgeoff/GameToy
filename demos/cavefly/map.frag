@@ -15,8 +15,8 @@ float hash13(vec3 p3)
 
 
 bool cavex(ivec2 coord, vec4 map_settings) {
-    
-    if (any(greaterThan(coord, MAP_SIZE))) {
+    coord -= 1;
+    if (any(greaterThan(coord, MAP_SIZE - 1)) || any(lessThan(coord, ivec2(0)))) {
         return true;
     }
 
@@ -36,9 +36,6 @@ bool cavex(ivec2 coord, vec4 map_settings) {
 
 
 vec4 gen_map(ivec2 coord, vec4 map_settings) {
-    
-    
-    
     ivec2 delta = ivec2(0, 1);
     bool here = cavex(coord, map_settings);
     bool above = cavex(coord + delta, map_settings);
@@ -62,11 +59,11 @@ vec4 gen_map(ivec2 coord, vec4 map_settings) {
         }
     } else if (tile_type == 2) {
         if (here == above_right) {
-            tile_type = 5;
+            tile_type = 6;
             if (here) {
-                tile_rot = 0;
-            } else {
                 tile_rot = 1;
+            } else {
+                tile_rot = 0;
             }
         } else {
             if (here && above) {
@@ -90,6 +87,7 @@ vec4 gen_map(ivec2 coord, vec4 map_settings) {
             tile_rot = 3;
         }
     }
+    
     return vec4(
         float(here),
         float(tile_type),
@@ -102,8 +100,7 @@ vec4 gen_map(ivec2 coord, vec4 map_settings) {
 
 void main()
 {
-    ivec2 addr = ivec2(fragCoordUV * iResolution.xy);
-    vec2 fragCoord = fragCoordUV * iResolution.xy;
+    ivec2 addr = ivec2(fragCoord);
     
     vec4 map = texelFetch(BUFFER_MAP_STATE, addr, 0);
     

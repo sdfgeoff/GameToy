@@ -4,6 +4,6 @@ void main(){
     
     ivec2 addr = ivec2(fragCoord);
     if (addr == ADDR_CAMERA_POSITION) {
-        fragColor = vec4(3.0, 3.0 + sin(iTime), 5.0, 1.0);
+        fragColor = vec4(0.0, 0.0, 2.0, 1.0);
     }
 }

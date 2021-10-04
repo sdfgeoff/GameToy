@@ -48,7 +48,7 @@ vec2 shadowSample(vec2 prev_sample, vec2 uv, float zoom, float mip) {
 void main(){
     
     vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 0.8);
-    vec4 background = render_background(background_viewport, vec2(7.0));
+    vec4 background = render_background(background_viewport, vec2(1.0));
     vec4 map = textureLod(BUFFER_MAP_SCREEN, fragCoordUV, 0.0);
     
     vec2 shadow = vec2(1.0, 0.0);
@@ -59,12 +59,12 @@ void main(){
     shadow.g /= 4.0;
     shadow.g = pow(shadow.g, 0.5);
     
-    
+    vec4 ship = get_sprite(ShapeTexture, vec2(4, 2), vec2(0,1), fragCoordUV); 
     
     
     //vec4 map_state = get_sprite_rot(ShapeTexture, 4.0, vec2(0.0, 0.0), iTime, fragCoordUV);
     
-    fragColor = background * map.g * shadow.r + shadow.g * 0.1;
+    fragColor = ship + background * map.g * shadow.r + shadow.g * 0.1;
 }
 
 
