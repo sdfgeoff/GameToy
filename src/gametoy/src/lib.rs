@@ -81,7 +81,6 @@ impl GameToy {
         let mut output_node_maybe = None;
 
         for node in game_data.config_file.graph.nodes.iter() {
-            println!("Setting up node {:?}", node);
             let new_node: NodeRef = match node {
                 config_file::Node::RenderPass(pass_config) => {
                     let new_pass =

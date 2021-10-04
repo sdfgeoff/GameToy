@@ -1,3 +1,16 @@
+///////////////////////// CONSTANTS //////////////////////////////
+const float PI = 3.14159;
+
+const vec3 SHIP_DAMPING = vec3(2.0, 2.0, 10.0);
+const vec3 SHIP_ACCELERATION = vec3(5.0, 5.0, 100.0);
+const vec3 SHIP_GRAVITY = vec3(0);//0.0, -9.8, 0.0);
+
+
+const int KEY_LEFT = 37;
+const int KEY_UP   = 38;
+const int KEY_RIGHT = 39;
+const int KEY_DOWN = 40;
+
 // Cavefly shared functions
 
 const ivec2 MAP_SIZE = ivec2(14, 14);
@@ -6,7 +19,10 @@ const ivec2 MAP_SIZE = ivec2(14, 14);
 const ivec2 ADDR_RESET = ivec2(0,0);
 const ivec2 ADDR_MAP_SETTINGS = ivec2(1,0);
 const ivec2 ADDR_CAMERA_POSITION = ivec2(3,0);
+const ivec2 ADDR_PLAYER_STATE = ivec2(4,0);
 
+
+//////////////////////////// STATE MANAGEMENT //////////////////////////
 
 // Fetch a single pixel from the state buffer buffer
 vec4 read_data(sampler2D buffer, ivec2 address){
@@ -14,15 +30,51 @@ vec4 read_data(sampler2D buffer, ivec2 address){
 }
 
 
+
+// Packs the player data into a vec4
+vec4 pack_player(vec3 position, vec3 velocity, float flame, float fuel) {
+    position = position / vec3(vec2(MAP_SIZE), PI);
+    velocity = velocity / vec3(vec2(MAP_SIZE), PI);
+    return vec4(
+        uintBitsToFloat(packSnorm2x16(position.xy)),
+        uintBitsToFloat(packSnorm2x16(velocity.xy)),
+        uintBitsToFloat(packSnorm2x16(vec2(position.z, velocity.z))),
+        uintBitsToFloat(packSnorm2x16(vec2(flame, fuel)))
+    );
+}
+
+
+// Unpacks the player data from a vec4
+void unpack_player(in vec4 data, out vec3 position, out vec3 velocity, out float flame, out float fuel) {
+    position.xy = unpackSnorm2x16(floatBitsToUint(data.x));
+    velocity.xy = unpackSnorm2x16(floatBitsToUint(data.y));
+    vec2 angle_data = unpackSnorm2x16(floatBitsToUint(data.z));
+    vec2 extra_data = unpackSnorm2x16(floatBitsToUint(data.w));
+    position.z = angle_data.x;
+    velocity.z = angle_data.y;
+    
+    position *= vec3(vec2(MAP_SIZE), PI);
+    velocity *= vec3(vec2(MAP_SIZE), PI);
+    
+    flame = extra_data.x;
+    fuel = extra_data.y;
+}
+
+
 vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z) {
     uv -= 0.5;
     uv.x *= iResolution.x / iResolution.y;
     uv += 0.5;
+    uv -= 0.5;
     
     vec4 cam_data = read_data(state_buffer, ADDR_CAMERA_POSITION);
     uv = uv * cam_data.z + cam_data.xy;
     return uv;
 }
+
+////////////////////////// SPRITE SAMPLING /////////////////////////////
+
+
 
 
 vec4 get_sprite_rot(sampler2D sprites, float num_rows, vec2 tile_id, float angle, vec2 delta) {
@@ -35,8 +87,14 @@ vec4 get_sprite_rot(sampler2D sprites, float num_rows, vec2 tile_id, float angle
 }
 
 vec4 get_sprite(sampler2D sprites, vec2 num_rows, vec2 tile_id, vec2 delta) {
+    if (any(greaterThan(abs(delta), vec2(1.0)))) {
+        return vec4(0.0);
+    }
     delta = ((delta - 0.5) * 0.99) + 0.5;
+    delta = delta * 0.5 + 0.5;
     vec2 coords = (tile_id + delta) / num_rows;
+    
+    
     return texture(sprites, coords);
 }
 

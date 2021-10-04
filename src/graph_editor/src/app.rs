@@ -137,6 +137,7 @@ impl epi::App for GametoyGraphEditor {
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>, gl: &glow::Context) {
         //let mut new_proj = self.state.project_data.clone();
+        ctx.set_pixels_per_point(1.2);
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:

@@ -41,7 +41,24 @@ vec2 shadowSample(vec2 prev_sample, vec2 uv, float zoom, float mip) {
 }
 
 
-
+vec4 sample_ship(vec2 world_coords, vec3 player_position) {
+    vec2 pos = world_coords - player_position.xy;
+    float s = sin(player_position.z);
+    float c = cos(player_position.z);
+    
+    mat2 rotmat = mat2(
+        c, -s,
+        s, c
+    );
+    
+    vec2 coords = rotmat * pos;
+    coords.y *= -0.5;
+    coords *= 10.0;
+    
+    vec4 ship = get_sprite(ShapeTexture, vec2(4, 2), vec2(0,1), coords);
+    
+    return ship;
+};
 
 
 
@@ -59,12 +76,26 @@ void main(){
     shadow.g /= 4.0;
     shadow.g = pow(shadow.g, 0.5);
     
-    vec4 ship = get_sprite(ShapeTexture, vec2(4, 2), vec2(0,1), fragCoordUV); 
+    vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
+    vec3 player_position, player_velocity;
+    float flame, fuel;
+    unpack_player(player_state, player_position, player_velocity, flame, fuel); 
+    vec4 ship_sprite = sample_ship(background_viewport, player_position);
     
     
-    //vec4 map_state = get_sprite_rot(ShapeTexture, 4.0, vec2(0.0, 0.0), iTime, fragCoordUV);
     
-    fragColor = ship + background * map.g * shadow.r + shadow.g * 0.1;
+    vec4 out_color = vec4(0.0);
+    out_color = background;
+    
+    out_color *= map.g; // Map
+    out_color *= shadow.r; // Shadows
+    out_color += shadow.g * 0.1; // God Rays
+    
+    
+    out_color *= step(ship_sprite.b, 0.5); // Ship Triangle
+    out_color += ship_sprite.r * ship_sprite.r * flame; // Ship Flame
+    
+    fragColor = out_color;
 }
 
 
