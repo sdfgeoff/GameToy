@@ -22,6 +22,9 @@ const ivec2 ADDR_CAMERA_POSITION = ivec2(3,0);
 const ivec2 ADDR_PLAYER_STATE = ivec2(4,0);
 
 
+const float MAP_SCREEN_SCALE = 1.0; // Extend the map screen buffer by this percent to allow better god-rays at screen edge
+const float LIGHT_DISTANCE_SCALE = 5.0;
+
 //////////////////////////// STATE MANAGEMENT //////////////////////////
 
 // Fetch a single pixel from the state buffer buffer
@@ -68,7 +71,7 @@ vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z) {
     uv -= 0.5;
     
     vec4 cam_data = read_data(state_buffer, ADDR_CAMERA_POSITION);
-    uv = uv * cam_data.z + cam_data.xy;
+    uv = uv * cam_data.z / z + cam_data.xy;
     return uv;
 }
 

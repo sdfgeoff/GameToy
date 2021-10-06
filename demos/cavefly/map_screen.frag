@@ -24,7 +24,7 @@ vec4 render_map(vec2 map_coords) {
 }
 
 void main(){
-    vec2 map_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.2);
+    vec2 map_viewport = uv_to_camera_view(fragCoordUV * MAP_SCREEN_SCALE, BUFFER_STATE, 1.2);
     vec4 map = render_map(map_viewport);
     
     fragColor = map;
