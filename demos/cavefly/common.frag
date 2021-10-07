@@ -10,14 +10,17 @@ const int KEY_LEFT = 37;
 const int KEY_UP   = 38;
 const int KEY_RIGHT = 39;
 const int KEY_DOWN = 40;
+const int KEY_ESC = 27;
 
 // Cavefly shared functions
 
 const ivec2 MAP_SIZE = ivec2(14, 14);
 
 
+// R = frames since reset
+// G = map seed
 const ivec2 ADDR_RESET = ivec2(0,0);
-const ivec2 ADDR_MAP_SETTINGS = ivec2(1,0);
+
 const ivec2 ADDR_CAMERA_POSITION = ivec2(3,0);
 const ivec2 ADDR_PLAYER_STATE = ivec2(4,0);
 
@@ -74,6 +77,17 @@ vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z) {
     uv = uv * cam_data.z / z + cam_data.xy;
     return uv;
 }
+/////////////////////////// UTIL ///////////////////////
+
+float tlerp(float start, float end, float time_constant, float dt) {
+    float t = exp(-dt / time_constant);
+    return mix(end, start, t);
+}
+vec4 tlerp(vec4 start, vec4 end, float time_constant, float dt) {
+    float t = exp(-dt / time_constant);
+    return mix(end, start, t);
+}
+
 
 ////////////////////////// SPRITE SAMPLING /////////////////////////////
 

@@ -20,16 +20,24 @@ void main(){
         
         vec4 target_camera_state = vec4(player_position.xy, 3.0, 0.0);
         
-        vec4 camera_state = mix(prev_camera_state, target_camera_state, iTimeDelta); // TODO Use time correct lerp
+        vec4 camera_state = tlerp(prev_camera_state, target_camera_state, 0.5, iTimeDelta);
         
+        if (read_data(BUFFER_STATE, ADDR_RESET).r == 0.0) {
+            camera_state = vec4(0);
+        }
         fragColor = camera_state;
+        return;
     }
     
     if (addr == ADDR_RESET) {
-        fragColor = vec4(0.0, 0.0, 0.0, 0.0);
-    }
-    if (addr == ADDR_MAP_SETTINGS) {
-        fragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        vec4 prev_state = read_data(BUFFER_STATE, ADDR_RESET);
+        
+        if (get_key(KEY_ESC) > 0.0) {
+            fragColor = vec4(0.0, iTime, 0.0, 0.0);
+        } else {
+            fragColor = prev_state + vec4(1.0, 0.0, 0.0, 0.0);
+        }
+        return;
     }
     
     if (addr == ADDR_PLAYER_STATE) {
@@ -38,10 +46,12 @@ void main(){
         float flame, fuel;
         unpack_player(player_state, player_position, player_velocity, flame, fuel); 
         
+        if (read_data(BUFFER_STATE, ADDR_RESET).r == 0.0) {
+            player_position = vec3(0);
+        }
+        
         float thrust_query = get_key(KEY_UP);
-        
-        flame = thrust_query; // TODO: Add engine throttle response rate
-        
+        flame = tlerp(flame, thrust_query, 0.05, iTimeDelta);
         float thrust_amt = flame;
         float rotate_amt = get_key(KEY_LEFT) - get_key(KEY_RIGHT);
         

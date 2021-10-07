@@ -14,18 +14,18 @@ float hash13(vec3 p3)
 }
 
 
-bool cavex(ivec2 coord, vec4 map_settings) {
+bool cavex(ivec2 coord, float seed) {
     coord -= 1;
     if (any(greaterThan(coord, MAP_SIZE - 1)) || any(lessThan(coord, ivec2(0)))) {
         return true;
     }
 
     ivec2 delta = ivec2(0, 1);
-    bool noise_here = hash13(vec3(coord, map_settings.r)) > 0.5;
-    bool noise_above = hash13(vec3(coord + delta.xy, map_settings.r)) > 0.5;
-    bool noise_below = hash13(vec3(coord - delta.xy, map_settings.r)) > 0.5;
-    bool noise_left = hash13(vec3(coord + delta.yx, map_settings.r)) > 0.5;
-    bool noise_right = hash13(vec3(coord - delta.yx, map_settings.r)) > 0.5;
+    bool noise_here = hash13(vec3(coord, seed)) > 0.5;
+    bool noise_above = hash13(vec3(coord + delta.xy, seed)) > 0.5;
+    bool noise_below = hash13(vec3(coord - delta.xy, seed)) > 0.5;
+    bool noise_left = hash13(vec3(coord + delta.yx, seed)) > 0.5;
+    bool noise_right = hash13(vec3(coord - delta.yx, seed)) > 0.5;
     
     bool magic = (noise_right == noise_left &&
         noise_above == noise_below &&
@@ -35,12 +35,12 @@ bool cavex(ivec2 coord, vec4 map_settings) {
 }
 
 
-vec4 gen_map(ivec2 coord, vec4 map_settings) {
+vec4 gen_map(ivec2 coord, float seed) {
     ivec2 delta = ivec2(0, 1);
-    bool here = cavex(coord, map_settings);
-    bool above = cavex(coord + delta, map_settings);
-    bool right = cavex(coord + delta.yx, map_settings);
-    bool above_right = cavex(coord + delta.yy, map_settings);
+    bool here = cavex(coord, seed);
+    bool above = cavex(coord + delta, seed);
+    bool right = cavex(coord + delta.yx, seed);
+    bool above_right = cavex(coord + delta.yy, seed);
     
     int tile_type = int(here) + int(above) + int(right) + int(above_right);
     int tile_rot = 0;
@@ -106,8 +106,8 @@ void main()
     
     if (read_data(BUFFER_STATE, ADDR_RESET).r != 0.0 || iFrame == 0u) {
         //Need to regenerate the map
-        vec4 map_settings = read_data(BUFFER_STATE, ADDR_MAP_SETTINGS);
-        map = gen_map(addr, map_settings);
+        float seed = read_data(BUFFER_STATE, ADDR_RESET).g;
+        map = gen_map(addr, seed);
     }
     
 

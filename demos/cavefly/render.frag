@@ -19,8 +19,6 @@ vec4 render_background(vec2 map_coords, vec3[NUM_LIGHTS] light_array) {
 }
 
 
-
-
 float hash13(vec3 p3)
 {
 	p3  = fract(p3 * .1031);
@@ -35,7 +33,6 @@ vec2 shadowSample(vec2 prev_sample, vec2 uv, vec2 viewport, vec3 light_data, flo
     v.x *= iResolution.y / iResolution.x;
     float lv = length(v);
     float mip = min(lv * zoom * 1.0, 5.0) + 2.0;
-    
     vec2 coord = uv + v * (zoom + lv * n1 * 6.0) * 0.02;
     
     vec4 map_sample = textureLod(BUFFER_MAP_SCREEN, coord, mip);
