@@ -104,10 +104,20 @@ void main()
     
     vec4 map = texelFetch(BUFFER_MAP_STATE, addr, 0);
     
-    if (read_data(BUFFER_STATE, ADDR_RESET).r != 0.0 || iFrame == 0u) {
+    if (read_data(BUFFER_STATE, ADDR_RESET).r != 0.0) {
         //Need to regenerate the map
         float seed = read_data(BUFFER_STATE, ADDR_RESET).g;
-        map = gen_map(addr, seed);
+        
+        if (addr == ADDR_MAP_METADATA) {
+            map = pack_map_metadata(
+                vec2(1.0),
+                vec2[NUM_LIGHTS](vec2(1.0, 1.0),
+                vec2(1.0, 4.0),
+                vec2(1.0, 8.0))
+            );
+        } else {
+            map = gen_map(addr, seed);
+        }
     }
     
 

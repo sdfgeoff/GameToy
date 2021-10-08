@@ -1,8 +1,6 @@
 /// Cavefly Render pass. Creates the final output
 
-#define NUM_LIGHTS 5
-
-vec4 render_background(vec2 map_coords, vec3[NUM_LIGHTS] light_array) {
+vec4 render_background(vec2 map_coords, vec3[NUM_LIGHTS+1] light_array) {
     vec4 noise = texture(BackgroundTexture, map_coords * 0.1) - 0.5;
     float light = 0.0;
     
@@ -72,18 +70,32 @@ vec4 sample_ship(vec2 world_coords, vec3 player_position) {
 
 
 void main(){
+    vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.0);
+    vec2 map_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.2);
     
-    vec3 light_array[NUM_LIGHTS] = vec3[NUM_LIGHTS](
-        // X, Y, Brightness
-        vec3(1.0, 1.0, 0.8),
-        vec3(1.0,4.0, 0.8),
-        vec3(1.0,8.0, 0.8),
-        vec3(5.0,1.0, 0.8),
-        vec3(4.0,4.0, 0.8)
-    );
+    
+    
+    vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
+    vec3 player_position, player_velocity;
+    float flame, fuel;
+    unpack_player(player_state, player_position, player_velocity, flame, fuel); 
+    vec4 ship_sprite = sample_ship(map_viewport, player_position);
+    
+    
+    
+    vec2 start_position;
+    vec2 light_pos_array[NUM_LIGHTS];
+    vec3 light_array[NUM_LIGHTS+1];
+    
+    vec4 map_metadata = read_data(BUFFER_MAP_STATE, ADDR_MAP_METADATA);
+    unpack_map_metadata(map_metadata, start_position, light_pos_array);
+    
+    for (int i=0; i<NUM_LIGHTS; i+=1) {
+        light_array[i] = vec3(light_pos_array[i], 0.8);
+    }
+    light_array[NUM_LIGHTS] = vec3(player_position.xy, 0.5);
 
     
-    vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.0);
     vec4 background = render_background(background_viewport, light_array);
     
     
@@ -93,39 +105,29 @@ void main(){
     
     vec2 map_screen_uv = (fragCoordUV) * (1.0 / MAP_SCREEN_SCALE);
     vec4 map = textureLod(BUFFER_MAP_SCREEN, map_screen_uv, 0.0);
-    vec2 map_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.0);
     
-    for (int i=0; i<NUM_LIGHTS; i+=1) {
+    for (int i=0; i<NUM_LIGHTS+1; i+=1) {
         vec3 light_data = light_array[i];
-        
-        vec2 v = (light_data.xy - map_viewport);// / 3.0 * 1.2;
-        
         shadow = shadowSample(shadow, map_screen_uv, map_viewport, light_data, 0.0);
-        //shadow = shadowSample(shadow, map_screen_uv, map_viewport, light_data, 3.0);
-        
-
-        shadow.g /= 1.0;
     }
     shadow.g = pow(shadow.g, 0.5);
     
-    vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
-    vec3 player_position, player_velocity;
-    float flame, fuel;
-    unpack_player(player_state, player_position, player_velocity, flame, fuel); 
-    vec4 ship_sprite = sample_ship(background_viewport, player_position);
+    
     
     
     
     vec4 out_color = vec4(0.0);
     out_color = background;
+    out_color *= shadow.g;
+    
+    out_color *= step(ship_sprite.b, 0.5); // Ship Triangle
+    out_color += pow(ship_sprite.r * max(ship_sprite.r - (1.0 - flame), 0.0), 2.0); // Ship Flame
     
     out_color *= map.g; // Map
-    //out_color *= shadow.r * sin(iTime); // Shadows
     out_color += shadow.g * 0.3; // God Rays
     
     
-    out_color *= step(ship_sprite.b, 0.5); // Ship Triangle
-    out_color += ship_sprite.r * ship_sprite.r * flame; // Ship Flame
+    
     
     fragColor = out_color;
 }

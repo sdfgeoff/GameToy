@@ -3,7 +3,7 @@ const float PI = 3.14159;
 
 const vec3 SHIP_DAMPING = vec3(2.0, 2.0, 10.0);
 const vec3 SHIP_ACCELERATION = vec3(5.0, 5.0, 100.0);
-const vec3 SHIP_GRAVITY = vec3(0);//0.0, -9.8, 0.0);
+const vec3 SHIP_GRAVITY = vec3(0.0, -2.0, 0.0);
 
 
 const int KEY_LEFT = 37;
@@ -12,9 +12,10 @@ const int KEY_RIGHT = 39;
 const int KEY_DOWN = 40;
 const int KEY_ESC = 27;
 
-// Cavefly shared functions
 
 const ivec2 MAP_SIZE = ivec2(14, 14);
+
+#define NUM_LIGHTS 3
 
 
 // R = frames since reset
@@ -24,9 +25,12 @@ const ivec2 ADDR_RESET = ivec2(0,0);
 const ivec2 ADDR_CAMERA_POSITION = ivec2(3,0);
 const ivec2 ADDR_PLAYER_STATE = ivec2(4,0);
 
+const ivec2 ADDR_MAP_METADATA = MAP_SIZE + ivec2(2);
+
 
 const float MAP_SCREEN_SCALE = 1.0; // Extend the map screen buffer by this percent to allow better god-rays at screen edge
 const float LIGHT_DISTANCE_SCALE = 5.0;
+const float CAMERA_DEFAULT_ZOOM = 3.0;
 
 //////////////////////////// STATE MANAGEMENT //////////////////////////
 
@@ -64,6 +68,23 @@ void unpack_player(in vec4 data, out vec3 position, out vec3 velocity, out float
     
     flame = extra_data.x;
     fuel = extra_data.y;
+}
+
+
+vec4 pack_map_metadata(vec2 start_position, vec2[NUM_LIGHTS] light_array) {
+    return vec4(
+        uintBitsToFloat(packHalf2x16(start_position)),
+        uintBitsToFloat(packHalf2x16(light_array[0])),
+        uintBitsToFloat(packHalf2x16(light_array[1])),
+        uintBitsToFloat(packHalf2x16(light_array[2]))
+    );
+}
+void unpack_map_metadata(vec4 data, out vec2 start_position, out vec2[NUM_LIGHTS] light_array) {
+    start_position = unpackHalf2x16(floatBitsToUint(data.x));
+    light_array[0] = unpackHalf2x16(floatBitsToUint(data.y));
+    light_array[1] = unpackHalf2x16(floatBitsToUint(data.z));
+    light_array[2] = unpackHalf2x16(floatBitsToUint(data.a));
+
 }
 
 

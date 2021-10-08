@@ -16,7 +16,6 @@ vec4 render_map(vec2 map_coords) {
     ));
     
     float sdf_grass = sdf + abs((noise.r + 0.5) * (noise.g + 0.5) * 0.4);
-    
     float base = 1.0 - smoothstep(-0.01, 0.01, sdf_main);
     float grass = 1.0 - smoothstep(-0.01, 0.3, sdf_grass);
     
