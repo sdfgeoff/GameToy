@@ -113,6 +113,8 @@ void main(){
     shadow.g = pow(shadow.g, 0.5);
     
     
+    vec4 landing_pad = get_sprite(ShapeTexture, vec2(4, 2), vec2(0,0), (map_viewport - start_position) * vec2(2, -1));
+    
     
     
     
@@ -124,7 +126,12 @@ void main(){
     out_color += pow(ship_sprite.r * max(ship_sprite.r - (1.0 - flame), 0.0), 2.0); // Ship Flame
     
     out_color *= map.g; // Map
-    out_color += shadow.g * 0.3; // God Rays
+    out_color *= step(landing_pad.b, 0.5);
+    
+    //out_color += shadow.g * 0.3; // God Rays
+    
+    
+    
     
     
     

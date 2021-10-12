@@ -96,21 +96,44 @@ vec4 gen_map(ivec2 coord, float seed) {
     );
 }
 
-
-
 void main()
 {
     ivec2 addr = ivec2(fragCoord);
     
     vec4 map = texelFetch(BUFFER_MAP_STATE, addr, 0);
+    vec4 reset_state = read_data(BUFFER_STATE, ADDR_RESET);
     
-    if (read_data(BUFFER_STATE, ADDR_RESET).r != 0.0) {
+    if (reset_state.r == 0.0) {
         //Need to regenerate the map
-        float seed = read_data(BUFFER_STATE, ADDR_RESET).g;
+        float seed = reset_state.g;
         
         if (addr == ADDR_MAP_METADATA) {
+            
+            // Horrible non-GPU friendly code below. Sorry
+            //~ bool[MAP_WIDTH*MAP_HEIGHT] entire_map;
+            //~ int i, j;
+            //~ for (i=0; i<MAP_WIDTH; i++) {
+                //~ for (j=0; j<MAP_HEIGHT; j++) {
+                    //~ entire_map[i+j*MAP_WIDTH] = 
+                //~ }
+            //~ }
+            
+            ivec2 start_position = ivec2(1,MAP_HEIGHT/2);
+            while (
+                cavex(start_position, seed) == true ||  // Clear here
+                cavex(start_position + ivec2(0,1), seed) == true || // Clear above
+                cavex(start_position + ivec2(0,-1), seed) == false // Ground Below
+            ) {
+                start_position.x += 1;
+                if (start_position.x > MAP_WIDTH) {
+                    start_position.y += 1;
+                    start_position.x = 0;
+                }
+            }
+            
+            
             map = pack_map_metadata(
-                vec2(1.0),
+                vec2(start_position),
                 vec2[NUM_LIGHTS](vec2(1.0, 1.0),
                 vec2(1.0, 4.0),
                 vec2(1.0, 8.0))

@@ -4,6 +4,7 @@ const float PI = 3.14159;
 const vec3 SHIP_DAMPING = vec3(2.0, 2.0, 10.0);
 const vec3 SHIP_ACCELERATION = vec3(5.0, 5.0, 100.0);
 const vec3 SHIP_GRAVITY = vec3(0.0, -2.0, 0.0);
+const float SHIP_BOUNCE = 0.5;
 
 
 const int KEY_LEFT = 37;
@@ -13,7 +14,9 @@ const int KEY_DOWN = 40;
 const int KEY_ESC = 27;
 
 
-const ivec2 MAP_SIZE = ivec2(14, 14);
+const int MAP_HEIGHT = 14;
+const int MAP_WIDTH = 14;
+const ivec2 MAP_SIZE = ivec2(MAP_WIDTH, MAP_HEIGHT);
 
 #define NUM_LIGHTS 3
 
@@ -28,7 +31,7 @@ const ivec2 ADDR_PLAYER_STATE = ivec2(4,0);
 const ivec2 ADDR_MAP_METADATA = MAP_SIZE + ivec2(2);
 
 
-const float MAP_SCREEN_SCALE = 1.0; // Extend the map screen buffer by this percent to allow better god-rays at screen edge
+const float MAP_SCREEN_SCALE = 1.0; // (In Theory) Extend the map screen buffer by this percent to allow better god-rays at screen edge
 const float LIGHT_DISTANCE_SCALE = 5.0;
 const float CAMERA_DEFAULT_ZOOM = 3.0;
 
@@ -43,8 +46,8 @@ vec4 read_data(sampler2D buffer, ivec2 address){
 
 // Packs the player data into a vec4
 vec4 pack_player(vec3 position, vec3 velocity, float flame, float fuel) {
-    position = position / vec3(vec2(MAP_SIZE), PI);
-    velocity = velocity / vec3(vec2(MAP_SIZE), PI);
+    position = position / vec3(vec2(MAP_SIZE + 2), PI);
+    velocity = velocity / vec3(vec2(MAP_SIZE + 2), PI);
     return vec4(
         uintBitsToFloat(packSnorm2x16(position.xy)),
         uintBitsToFloat(packSnorm2x16(velocity.xy)),
@@ -63,8 +66,8 @@ void unpack_player(in vec4 data, out vec3 position, out vec3 velocity, out float
     position.z = angle_data.x;
     velocity.z = angle_data.y;
     
-    position *= vec3(vec2(MAP_SIZE), PI);
-    velocity *= vec3(vec2(MAP_SIZE), PI);
+    position *= vec3(vec2(MAP_SIZE + 2), PI);
+    velocity *= vec3(vec2(MAP_SIZE + 2), PI);
     
     flame = extra_data.x;
     fuel = extra_data.y;
