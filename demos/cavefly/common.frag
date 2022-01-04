@@ -35,6 +35,12 @@ const float MAP_SCREEN_SCALE = 1.0; // (In Theory) Extend the map screen buffer 
 const float LIGHT_DISTANCE_SCALE = 5.0;
 const float CAMERA_DEFAULT_ZOOM = 3.0;
 
+
+#define ENABLE_LIGHTING
+//#define ENABLE_GOD_RAYS
+//#define VIEW_WHOLE_MAP
+
+
 //////////////////////////// STATE MANAGEMENT //////////////////////////
 
 // Fetch a single pixel from the state buffer buffer
@@ -90,17 +96,21 @@ void unpack_map_metadata(vec4 data, out vec2 start_position, out vec2[NUM_LIGHTS
 
 }
 
-
-vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z) {
+vec2 uv_to_camera_view_raw(vec2 uv, vec2 camera_position, float z) {
     uv -= 0.5;
     uv.x *= iResolution.x / iResolution.y;
     uv += 0.5;
     uv -= 0.5;
-    
-    vec4 cam_data = read_data(state_buffer, ADDR_CAMERA_POSITION);
-    uv = uv * cam_data.z / z + cam_data.xy;
+    uv = uv * z + camera_position;
     return uv;
 }
+
+vec2 uv_to_camera_view(vec2 uv, sampler2D state_buffer, float z_offset) {
+    vec4 cam_data = read_data(state_buffer, ADDR_CAMERA_POSITION);
+    return uv_to_camera_view_raw(uv, cam_data.xy, cam_data.z - z_offset);
+}
+
+
 /////////////////////////// UTIL ///////////////////////
 
 float tlerp(float start, float end, float time_constant, float dt) {

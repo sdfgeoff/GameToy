@@ -1,10 +1,11 @@
 /// Cavefly Render pass. Creates the final output
 
+
 vec4 render_background(vec2 map_coords, vec3[NUM_LIGHTS+1] light_array) {
     vec4 noise = texture(BackgroundTexture, map_coords * 0.1) - 0.5;
+    #ifdef ENABLE_LIGHTING
     float light = 0.0;
-    
-    for (int i=0; i<NUM_LIGHTS; i+=1) {
+    for (int i=0; i<NUM_LIGHTS + 1; i+=1) {
         vec3 light_data = light_array[i];
         vec2 v = light_data.xy - map_coords;
         float falloff = light_data.z / (dot(v, v) * LIGHT_DISTANCE_SCALE + 1.0);
@@ -13,6 +14,9 @@ vec4 render_background(vec2 map_coords, vec3[NUM_LIGHTS+1] light_array) {
         
         light += falloff * shadows + falloff;
     }
+    #else
+    float light = 1.0;
+    #endif
     return vec4(light);
 }
 
@@ -70,10 +74,8 @@ vec4 sample_ship(vec2 world_coords, vec3 player_position) {
 
 
 void main(){
-    vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.0);
-    vec2 map_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 1.2);
-    
-    
+    vec2 background_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 0.0);
+    vec2 map_viewport = uv_to_camera_view(fragCoordUV, BUFFER_STATE, 0.5);
     
     vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
     vec3 player_position, player_velocity;
@@ -93,7 +95,7 @@ void main(){
     for (int i=0; i<NUM_LIGHTS; i+=1) {
         light_array[i] = vec3(light_pos_array[i], 0.8);
     }
-    light_array[NUM_LIGHTS] = vec3(player_position.xy, 0.5);
+    light_array[NUM_LIGHTS] = vec3(player_position.xy, flame * 0.1);
 
     
     vec4 background = render_background(background_viewport, light_array);
@@ -101,16 +103,22 @@ void main(){
     
     
     
-    vec2 shadow = vec2(1.0, 0.0);
+    
     
     vec2 map_screen_uv = (fragCoordUV) * (1.0 / MAP_SCREEN_SCALE);
     vec4 map = textureLod(BUFFER_MAP_SCREEN, map_screen_uv, 0.0);
     
+    #ifdef ENABLE_GOD_RAYS
+    vec2 shadow = vec2(1.0, 0.0);
     for (int i=0; i<NUM_LIGHTS+1; i+=1) {
         vec3 light_data = light_array[i];
         shadow = shadowSample(shadow, map_screen_uv, map_viewport, light_data, 0.0);
     }
     shadow.g = pow(shadow.g, 0.5);
+    #else
+    vec2 shadow = vec2(1.0, 1.0);
+    #endif
+    
     
     
     vec4 landing_pad = get_sprite(ShapeTexture, vec2(4, 2), vec2(0,0), (map_viewport - start_position) * vec2(2, -1));

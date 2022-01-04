@@ -88,6 +88,12 @@ vec4 gen_map(ivec2 coord, float seed) {
         }
     }
     
+    
+    if (tile_type == 6 && hash13(vec3(coord, seed + 0.5)) > 0.5) {
+        tile_type = 5;
+        tile_rot += 1;
+    }
+    
     return vec4(
         float(here),
         float(tile_type),
@@ -95,6 +101,38 @@ vec4 gen_map(ivec2 coord, float seed) {
         0.0
     );
 }
+
+
+
+ivec2 find_light_position(const ivec2 start_position, ivec2 initial_direction, float seed, float id) {
+    int bounces_remaining = 10;
+    
+    ivec2 current_position = start_position;
+    ivec2 travel_direction = initial_direction;
+    
+    
+    while (bounces_remaining >= 0) {
+        if (cavex(current_position + travel_direction, seed) == false) {
+            // Free Space
+            current_position = current_position + travel_direction;
+        } else {
+            int sign = hash13(vec3(current_position, seed + id + float(bounces_remaining))) < 0.5 ? -1 : 1;
+            
+            // GLSL doesn't have imat2's, so:
+            
+            travel_direction = ivec2(
+                dot(vec2(travel_direction), vec2(0, -sign)),
+                dot(vec2(travel_direction), vec2(sign, 0))
+            );
+            
+            bounces_remaining -= 1;
+        }
+    }
+    
+    return current_position;
+     
+}
+
 
 void main()
 {
@@ -108,16 +146,6 @@ void main()
         float seed = reset_state.g;
         
         if (addr == ADDR_MAP_METADATA) {
-            
-            // Horrible non-GPU friendly code below. Sorry
-            //~ bool[MAP_WIDTH*MAP_HEIGHT] entire_map;
-            //~ int i, j;
-            //~ for (i=0; i<MAP_WIDTH; i++) {
-                //~ for (j=0; j<MAP_HEIGHT; j++) {
-                    //~ entire_map[i+j*MAP_WIDTH] = 
-                //~ }
-            //~ }
-            
             ivec2 start_position = ivec2(1,MAP_HEIGHT/2);
             while (
                 cavex(start_position, seed) == true ||  // Clear here
@@ -131,12 +159,13 @@ void main()
                 }
             }
             
-            
             map = pack_map_metadata(
                 vec2(start_position),
-                vec2[NUM_LIGHTS](vec2(1.0, 1.0),
-                vec2(1.0, 4.0),
-                vec2(1.0, 8.0))
+                vec2[NUM_LIGHTS](
+                    vec2(find_light_position(start_position, ivec2(0, 1), seed, 0.0)),
+                    vec2(find_light_position(start_position, ivec2(1, 0), seed, 1.0)),
+                    vec2(find_light_position(start_position, ivec2(-1, 0), seed, 2.0))
+                )
             );
         } else {
             map = gen_map(addr, seed);

@@ -1,4 +1,4 @@
-// Cavefly Render pass. Creates the final output
+// Render just the map to the screen
 
 
 vec4 render_map(vec2 map_coords) {
@@ -23,7 +23,7 @@ vec4 render_map(vec2 map_coords) {
 }
 
 void main(){
-    vec2 map_viewport = uv_to_camera_view(fragCoordUV * MAP_SCREEN_SCALE, BUFFER_STATE, 1.2);
+    vec2 map_viewport = uv_to_camera_view(fragCoordUV * MAP_SCREEN_SCALE, BUFFER_STATE, 0.5);
     vec4 map = render_map(map_viewport);
     
     fragColor = map;

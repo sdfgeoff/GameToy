@@ -10,10 +10,18 @@ float get_key_edge(int key_code) {
 }
 
 
+float sdBox( in vec2 p, in vec2 b ) {
+    // Box SDF, from https://iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
+    vec2 d = abs(p)-b;
+    return length(max(d,0.0)) + min(max(d.x,d.y),0.0);
+}
+
+
 void main(){
     
     ivec2 addr = ivec2(fragCoord);
     if (addr == ADDR_CAMERA_POSITION) {
+        #ifndef VIEW_WHOLE_MAP
         vec4 prev_camera_state = read_data(BUFFER_STATE, ADDR_CAMERA_POSITION);
         
         vec4 player_state = read_data(BUFFER_STATE, ADDR_PLAYER_STATE);
@@ -35,8 +43,11 @@ void main(){
             unpack_map_metadata(map_metadata, start_position, light_pos_array);
             
             
-            camera_state = vec4(start_position, 0, 0);
+            camera_state = vec4(start_position, 1.0, 0);
         }
+        #else
+        vec4 camera_state = vec4(vec2(MAP_SIZE) / 2.0 + 0.5, MAP_HEIGHT + 4, 0.0);
+        #endif
         fragColor = camera_state;
         return;
     }
@@ -102,9 +113,22 @@ void main(){
             vec2 light_pos_array[NUM_LIGHTS];
             vec4 map_metadata = read_data(BUFFER_MAP_STATE, ADDR_MAP_METADATA);
             unpack_map_metadata(map_metadata, start_position, light_pos_array);
-            float height_above_pad = player_position.y - start_position.y;
-            if ((abs(player_position.x - start_position.x) < 0.5) && (height_above_pad < 0.0) && (height_above_pad > -0.5) ) {
-                player_velocity *= 0.5;
+            
+            vec2 pad_box_center = start_position + vec2(0.0, -0.5);
+            vec2 pad_box_half_extents = vec2(0.5, 0.25);
+            
+            float df_here = sdBox(player_position.xy - pad_box_center, pad_box_half_extents); //length(max(abs(player_position.xy - pad_box_center) - pad_box_half_extents, 0.0));
+    
+            if (df_here < 0.0) {
+                float df_right = sdBox(player_position.xy - pad_box_center + vec2(0.01, 0.0), pad_box_half_extents);
+                float df_above = sdBox(player_position.xy - pad_box_center + vec2(0.0, 0.01), pad_box_half_extents);
+            
+                vec2 dir =  normalize(vec2(
+                    df_here - df_right,
+                    df_here - df_above
+                )) ;
+                player_position.xy += dir * df_here;
+                player_velocity.xy = reflect(player_velocity.xy, dir) * SHIP_BOUNCE;
             }
         }
         
